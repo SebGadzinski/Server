@@ -11,6 +11,7 @@ import mongoose from 'mongoose';
 import config from '../config';
 import appRoutes from '../routes/app';
 import authenticationRoutes from '../routes/authentication';
+import dataRoutes from '../routes/data';
 import userRoutes from '../routes/user';
 
 const originalLog = console.log;
@@ -45,6 +46,7 @@ class Server {
     this.app.use('/api/user', userRoutes);
     this.app.use('/api/auth', authenticationRoutes);
     this.app.use('/api/app', appRoutes);
+    this.app.use('/api/data', dataRoutes);
 
     // Start the app.
     this.app.listen(config.port, () => {

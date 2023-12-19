@@ -24,7 +24,7 @@ const isAuthenticated = (req: any, res: any, next: express.NextFunction) => {
   try {
     decoded = jwt.verify(token, config.secret);
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     return res.status(401).json({
       message: 'You are not allowed to access this resource.',
       success: false

@@ -1,0 +1,39 @@
+/**
+ * @file Defines a schema for the user collection.
+ * @author Sebastian Gadzinski
+ */
+import mongoose, { Document, Model, Schema } from 'mongoose';
+import { transform } from '../utils/transform';
+
+export interface ICategory extends Document {
+  _id: Schema.Types.ObjectId;
+  name: string;
+  services: [string];
+  thumbnailImg: string;
+  createdBy: string;
+  updatedBy: string;
+}
+
+interface ICategoryModel extends Model<ICategory> {
+  // Add any static methods here if needed
+}
+
+const CategorySchema: Schema = new mongoose.Schema(
+  {
+    // Reference ID can be a user id, can be a id for a group or tag or anything.
+    // purpose is to make this Category collection usable for any type of need
+    name: { type: String, required: true },
+    services: { type: [String], required: true },
+    thumbnailImg: { type: String, required: true }
+  },
+  {
+    timestamps: true,
+    toJSON: { transform }
+  }
+);
+
+const Category: ICategoryModel = mongoose.model<ICategory, ICategoryModel>(
+  'category',
+  CategorySchema
+);
+export default Category;
