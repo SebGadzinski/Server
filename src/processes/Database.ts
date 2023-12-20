@@ -1,10 +1,14 @@
 import { LocalDateTime } from '@js-joda/core';
 import { Mail } from '@sendgrid/helpers/classes';
+import bcrypt from 'bcryptjs';
 import bluebird from 'bluebird';
 import { CronJob } from 'cron';
+import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import config from '../config';
-import { Category, Token } from '../models';
+import { Category, Meetings, Token, UnivailableDates, User } from '../models';
+import { IMeetings } from '../models/Meetings';
+import { IUser } from '../models/User';
 import EmailService from '../services/EmailService';
 
 const originalLog = console.log;
@@ -21,6 +25,7 @@ class Database {
 
   public async run() {
     await this.connectToMongo();
+    await this.createAndInsertUNVDATESCategories();
     await this.createAndInsertSampleCategories();
     // this.cleanTokens();
   }
@@ -68,15 +73,162 @@ class Database {
     job.start();
   }
 
+  private createAndInsertSampleUsers() {
+    return new Promise<IUser[]>((resolve, reject) => {
+      const sampleUsers: IUser[] = [];
+      const names = ['alex', 'jack', 'meghan', 'joanna', 'sebastian'];
+
+      for (let i = 1; i <= names.length; i++) {
+        const user = {
+          email: `${names[i]}@example.com`,
+          emailConfirmed: false,
+          fullName: `${names[i]} Magee`,
+          password: ``,
+          mfa: false,
+          roles: ['user'],
+          refreshToken: ``, // Replace 'your-secret-key' with your JWT secret
+          salt: ``,
+          createdBy: ``,
+          updatedBy: ``
+        };
+        User.deleteOne({ email: user.email }).then(() => {
+          bcrypt.genSalt(config.saltRounds, (saltError, salt) => {
+            if (saltError) return reject('Salt error.');
+
+            bcrypt.hash(user.password, salt, (hashError, hash) => {
+              if (hashError) return reject('Hash error.');
+
+              const refreshToken = jwt.sign(
+                { data: { email: user.email, fullName: user.fullName } },
+                config.secret
+              );
+
+              user.refreshToken = refreshToken;
+              user.password = hash;
+              user.salt = salt;
+
+              // Neccessary Fields
+              user.createdBy = 'server';
+              user.updatedBy = 'server';
+              user.mfa = false;
+
+              User.create(user)
+                .then(async (userDoc: IUser) => {
+                  userDoc.refreshToken = jwt.sign(
+                    {
+                      data: {
+                        id: userDoc._id,
+                        email: userDoc.email,
+                        expiresAt:
+                          new Date().getTime() + config.tokenExpirySeconds,
+                        fullName: userDoc.fullName,
+                        roles: userDoc.roles
+                      }
+                    },
+                    config.secret,
+                    { expiresIn: config.tokenExpirySeconds }
+                  );
+                  await userDoc.updateOne({ refreshToken: 1 });
+
+                  if (i + 1 === names.length) {
+                    return resolve(sampleUsers);
+                  }
+                  sampleUsers.push(userDoc);
+                })
+                .catch((error) => {
+                  reject(`User creation failed. ${error}`);
+                });
+            });
+          });
+        });
+      }
+    });
+  }
+
+  private async createSampleMeetings(users: IUser[]): Promise<void> {
+    await Meetings.deleteMany({});
+    const startDate = new Date();
+    const sebUser = await User.findOne({ email: 'seb.gadzy@gmail.com' }).lean();
+
+    const getRandomUser = (): IUser => {
+      return users[Math.floor(Math.random() * users.length)];
+    };
+
+    const getMeeting = (user: IUser): any => {
+      const start = new Date(startDate);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1); // Set end date to one day after start
+
+      return {
+        hostUserId: sebUser._id,
+        categorySlug: 'software',
+        serviceSlug: 'web-development', // Modify as needed
+        users: [user._id],
+        startDate: start,
+        endDate: end
+      };
+    };
+
+    let i = 0;
+    for (const user of users) {
+      if (i++ === 2) {
+        continue;
+      }
+      const meeting = getMeeting(user);
+      const newMeeting = new Meetings(meeting);
+      await newMeeting.save();
+
+      // Increment startDate for next iteration
+      startDate.setDate(startDate.getDate() + 2); // Increment by 2 days for the next set of meetings
+    }
+  }
+
+  private async createAndInsertUNVDATESCategories() {
+    await UnivailableDates.deleteMany({});
+    const user = await User.findOne({ email: 'seb.gadzy@gmail.com' }).lean();
+    const start = new Date();
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const univailableDates = new UnivailableDates({
+      userId: user._id,
+      startDate: start,
+      endDate: end
+    });
+    await univailableDates.save();
+  }
+
+  private getRandomUser(users) {
+    const randomIndex = Math.floor(Math.random() * users.length);
+    return users[randomIndex];
+  }
+
   private async createAndInsertSampleCategories() {
     try {
-      // Connect to MongoDB if not already connected
-      if (mongoose.connection.readyState !== 1) {
-        await mongoose.connect('your-mongodb-connection-string'); // Replace with your MongoDB connection string
+      await Category.deleteMany({});
+      const users = await this.createAndInsertSampleUsers();
+
+      await this.createSampleMeetings(users);
+
+      // Define sample categories and their services
+      const oneDayInMillis = 24 * 60 * 60 * 1000; // Milliseconds in a day
+      const oneAndHalfDayInMillis = oneDayInMillis + oneDayInMillis / 2;
+
+      const currentDate = new Date();
+      const startDateForUnavailable = new Date(
+        currentDate.getTime() + oneDayInMillis
+      );
+      const endDateForUnavailable = new Date(
+        currentDate.getTime() + oneAndHalfDayInMillis
+      );
+
+      function getUnivDates() {
+        return {
+          name: 'Public Holidays',
+          startDate: startDateForUnavailable,
+          endDate: endDateForUnavailable
+        };
       }
 
-      await Category.deleteMany({});
-      // Define sample categories and their services
       const sampleCategories = [
         {
           name: 'Software',

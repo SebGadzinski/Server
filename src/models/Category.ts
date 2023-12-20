@@ -25,9 +25,7 @@ export interface ICategory extends Document {
   updatedBy: string;
 }
 
-interface ICategoryModel extends Model<ICategory> {
-  // Add any static methods here if needed
-}
+interface ICategoryModel extends Model<ICategory> {}
 
 const CategorySchema: Schema = new mongoose.Schema(
   {
@@ -53,7 +51,8 @@ const CategorySchema: Schema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { transform }
+    toJSON: { transform },
+    statics: {}
   }
 );
 
@@ -61,4 +60,5 @@ const Category: ICategoryModel = mongoose.model<ICategory, ICategoryModel>(
   'category',
   CategorySchema
 );
+
 export default Category;

@@ -27,4 +27,16 @@ router.post(
   DataController.getServicePageData
 );
 
+router.post(
+  '/getMeetingPageData',
+  isAuthenticated,
+  DataController.getMeetingPageData
+);
+
+router.post(
+  '/meeting/findAvailableDurations',
+  isAuthenticated,
+  DataController.findAvailableDurations
+);
+
 export default router;

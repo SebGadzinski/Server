@@ -4,7 +4,7 @@
  */
 import Result from '../classes/Result';
 import config from '../config';
-import { Category, Token, User } from '../models';
+import { Category, Meetings, Token, User } from '../models';
 
 class DataController {
   private static readonly publicCollections = {
@@ -86,6 +86,50 @@ class DataController {
       const service = category.services[0];
 
       res.send(new Result({ data: service, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getMeetingPageData(req: any, res: any) {
+    try {
+      const date = new Date(req.body.date);
+
+      // if not admin
+      let userId = null;
+      if (req.user.data.roles.includes('admin')) {
+        userId = req.user.id;
+      }
+
+      const availbleTimesRightNow = await Meetings.findAvailableDurations(
+        userId,
+        date.getMonth(),
+        date.getFullYear()
+      );
+
+      res.send(new Result({ data: { availbleTimesRightNow }, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async findAvailableDurations(req: any, res: any) {
+    try {
+      const date = new Date(req.body.date);
+
+      // if not admin
+      let userId = null;
+      if (req.user.data.roles.includes('admin')) {
+        userId = req.user.id;
+      }
+
+      const availbleTimesRightNow = Meetings.findAvailableDurations(
+        userId,
+        date.getMonth(),
+        date.getFullYear()
+      );
+
+      res.send(new Result({ data: { availbleTimesRightNow }, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
