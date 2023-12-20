@@ -21,4 +21,10 @@ router.post(
   DataController.getCategoryPageData
 );
 
+router.post(
+  '/getServicePageData',
+  isAuthenticated,
+  DataController.getServicePageData
+);
+
 export default router;

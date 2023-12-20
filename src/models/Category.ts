@@ -10,7 +10,15 @@ export interface ICategory extends Document {
   name: string;
   slug: string;
   services: [
-    { name: string; slug: string; description: string; thumbnailImg: string }
+    {
+      name: string;
+      slug: string;
+      description: string;
+      thumbnailImg: string;
+      slides: [{ text: string; image: string }];
+      details: [{ header: string; info: string }];
+      faqs: [{ question: string; answer: string }];
+    }
   ];
   thumbnailImg: string;
   createdBy: string;
@@ -33,7 +41,10 @@ const CategorySchema: Schema = new mongoose.Schema(
           name: String,
           slug: String,
           description: String,
-          thumbnailImg: String
+          thumbnailImg: String,
+          slides: [{ text: String, image: String }],
+          details: [{ header: String, info: String }],
+          faqs: [{ question: String, answer: String }]
         }
       ],
       required: true

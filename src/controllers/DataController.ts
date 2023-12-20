@@ -64,6 +64,32 @@ class DataController {
       res.send(new Result({ message: err.message, success: false }));
     }
   }
+
+  public async getServicePageData(req: any, res: any) {
+    try {
+      const categorySlug = req.body.categorySlug;
+      const serviceSlug = req.body.serviceSlug; // assuming the service slug is provided in the request
+
+      // Find the category and project only the matching service
+      const category = await Category.findOne(
+        { slug: categorySlug, services: { $elemMatch: { slug: serviceSlug } } },
+        { 'services.$': 1 }
+      ).lean();
+
+      if (!category || !category.services) {
+        return res.send(
+          new Result({ message: 'Service not found', success: false })
+        );
+      }
+
+      // Extract the matched service
+      const service = category.services[0];
+
+      res.send(new Result({ data: service, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
 }
 
 export default new DataController();
