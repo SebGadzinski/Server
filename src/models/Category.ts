@@ -8,7 +8,10 @@ import { transform } from '../utils/transform';
 export interface ICategory extends Document {
   _id: Schema.Types.ObjectId;
   name: string;
-  services: [string];
+  slug: string;
+  services: [
+    { name: string; slug: string; description: string; thumbnailImg: string }
+  ];
   thumbnailImg: string;
   createdBy: string;
   updatedBy: string;
@@ -23,7 +26,18 @@ const CategorySchema: Schema = new mongoose.Schema(
     // Reference ID can be a user id, can be a id for a group or tag or anything.
     // purpose is to make this Category collection usable for any type of need
     name: { type: String, required: true },
-    services: { type: [String], required: true },
+    slug: { type: String, required: true },
+    services: {
+      type: [
+        {
+          name: String,
+          slug: String,
+          description: String,
+          thumbnailImg: String
+        }
+      ],
+      required: true
+    },
     thumbnailImg: { type: String, required: true }
   },
   {
