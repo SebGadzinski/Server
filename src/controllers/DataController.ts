@@ -10,6 +10,8 @@ class DataController {
   private static readonly publicCollections = {
     category: Category
   };
+
+  // _Generics
   public async getCollection(req: any, res: any) {
     try {
       const collectionName = req.body.name;
@@ -31,6 +33,7 @@ class DataController {
     }
   }
 
+  // _Home
   public async getHomePageData(req: any, res: any) {
     try {
       const data = await Category.find().select(
@@ -43,6 +46,7 @@ class DataController {
     }
   }
 
+  // _Category
   public async getCategoryPageData(req: any, res: any) {
     try {
       const data = await Category.aggregate([
@@ -65,6 +69,7 @@ class DataController {
     }
   }
 
+  // _Category.Service
   public async getServicePageData(req: any, res: any) {
     try {
       const categorySlug = req.body.categorySlug;
@@ -91,6 +96,8 @@ class DataController {
     }
   }
 
+  // _Meetings
+
   public async getMeetingPageData(req: any, res: any) {
     try {
       const date = new Date(req.body.date);
@@ -107,10 +114,7 @@ class DataController {
         { $match: { 'services.slug': req.body.serviceSlug } },
         { $project: { 'name': 1, 'services.name': 1 } }
       ]).exec();
-      const unavailablePeriods = await Meetings.findUnavailableDurations(
-        userId,
-        date
-      );
+      const unavailablePeriods = await Meetings.findUnavailableDurations(date);
 
       res.send(
         new Result({
@@ -137,12 +141,60 @@ class DataController {
         userId = req.user.id;
       }
 
-      const unavailablePeriods = await Meetings.findUnavailableDurations(
-        userId,
-        date
-      );
+      const unavailablePeriods = await Meetings.findUnavailableDurations(date);
 
       res.send(new Result({ data: unavailablePeriods, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async bookMeeting(req, res) {
+    try {
+      const { categorySlug, serviceSlug } = req.body;
+      const startDate = new Date(req.body.startDate);
+      const users: string[] = [];
+
+      if (!req?.user?.id) throw new Error('Sign Up Required');
+      if (!req.user.emailConfirmed) throw new Error('Email Confirmed Required');
+
+      users.push(req.user.id);
+
+      // Validate input
+      if (!categorySlug || !serviceSlug || users.length === 0 || !startDate) {
+        throw new Error('Missing required fields');
+      }
+
+      // Check for time conflicts
+      const endDate: Date = new Date(startDate.getTime());
+      endDate.setHours(endDate.getHours() + 1);
+      const conflictingMeetings = await Meetings.find({
+        $or: [
+          { startDate: { $lt: endDate, $gte: startDate } },
+          { endDate: { $gt: startDate, $lte: endDate } }
+        ],
+        users: { $in: users }
+      });
+
+      if (conflictingMeetings.length > 0) {
+        throw new Error('Time slot is not available');
+      }
+
+      // Add Meeting
+      const newMeeting = new Meetings({
+        // Me for now
+        // hostUserId,
+        categorySlug,
+        serviceSlug,
+        users,
+        startDate,
+        endDate
+      });
+      await newMeeting.save();
+
+      // Later attach to work item
+
+      res.send(new Result({ data: newMeeting, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }

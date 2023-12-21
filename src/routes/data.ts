@@ -26,4 +26,6 @@ router.post(
   DataController.findUnavailableDurations
 );
 
+router.post('/meeting/book', DataController.bookMeeting);
+
 export default router;

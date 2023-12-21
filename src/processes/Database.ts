@@ -162,7 +162,7 @@ class Database {
       end.setMilliseconds(0);
 
       return {
-        hostUserId: sebUser._id,
+        // hostUserId: sebUser._id,
         categorySlug: 'software',
         serviceSlug: 'web-development', // Modify as needed
         users: [user._id],

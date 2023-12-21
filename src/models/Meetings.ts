@@ -8,7 +8,7 @@ import UnivailableDates from './UnivailableDates';
 
 export interface IMeetings extends Document {
   _id: Schema.Types.ObjectId;
-  hostUserId: Schema.Types.ObjectId;
+  // hostUserId: Schema.Types.ObjectId; ADVANCMENT
   categorySlug: string;
   serviceSlug: string;
   users: [Schema.Types.ObjectId];
@@ -26,7 +26,7 @@ interface IMeetingsModel extends Model<IMeetings> {
     serviceSlug: string,
     fromDate: Date
   ): Promise<Date>;
-  findUnavailableDurations(hostUserId: string, date: Date): Promise<Date>;
+  findUnavailableDurations(date: Date): Promise<Date>;
   meetingAt(
     categorySlug: string,
     serviceSlug: string,
@@ -36,7 +36,7 @@ interface IMeetingsModel extends Model<IMeetings> {
 
 const MeetingsSchema: Schema = new mongoose.Schema(
   {
-    hostUserId: { type: Schema.Types.ObjectId, ref: 'User' }, // Reference to User model
+    // hostUserId: { type: Schema.Types.ObjectId, ref: 'User' }, // Reference to User model
     categorySlug: { type: String, required: true },
     serviceSlug: { type: String, required: true },
     users: { type: [Schema.Types.ObjectId], required: true },
@@ -73,7 +73,7 @@ const MeetingsSchema: Schema = new mongoose.Schema(
         return result[0]?.startDate || null;
       },
 
-      async findUnavailableDurations(hostUserId, date) {
+      async findUnavailableDurations(date) {
         // Fetch unavailable dates
         const unavailableDates = await UnivailableDates.find(
           {},
@@ -83,16 +83,9 @@ const MeetingsSchema: Schema = new mongoose.Schema(
           .exec();
 
         // Fetch meetings scheduled for or after the given date
-        const meetings = await (hostUserId
-          ? // mabye can make this a whole ting
-            this.find({
-              hostUserId,
-              endDate: { $gt: date }
-            })
-          : this.find({
-              endDate: { $gt: date }
-            })
-        )
+        const meetings = await this.find({
+          endDate: { $gt: date }
+        })
           .lean()
           .exec();
 
