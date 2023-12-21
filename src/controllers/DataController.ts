@@ -97,16 +97,31 @@ class DataController {
 
       // if not admin
       let userId = null;
-      if (req.user.data.roles.includes('admin')) {
+      if (req?.user?.data.roles.includes('admin')) {
         userId = req.user.id;
       }
 
+      const category = await Category.aggregate([
+        { $match: { slug: req.body.categorySlug } },
+        { $unwind: '$services' },
+        { $match: { 'services.slug': req.body.serviceSlug } },
+        { $project: { 'name': 1, 'services.name': 1 } }
+      ]).exec();
       const unavailablePeriods = await Meetings.findUnavailableDurations(
         userId,
         date
       );
 
-      res.send(new Result({ data: { unavailablePeriods }, success: true }));
+      res.send(
+        new Result({
+          data: {
+            unavailablePeriods,
+            category: category[0].name,
+            service: category[0].services.name
+          },
+          success: true
+        })
+      );
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
@@ -118,7 +133,7 @@ class DataController {
 
       // if not admin
       let userId = null;
-      if (req.user.data.roles.includes('admin')) {
+      if (req?.user?.data.roles.includes('admin')) {
         userId = req.user.id;
       }
 

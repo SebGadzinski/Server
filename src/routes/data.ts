@@ -13,29 +13,16 @@ const router = express.Router({});
 
 router.post('/col', isAuthenticated, DataController.getCollection);
 
-router.get('/getHomePageData', isAuthenticated, DataController.getHomePageData);
+router.get('/getHomePageData', DataController.getHomePageData);
 
-router.post(
-  '/getCategoryPageData',
-  isAuthenticated,
-  DataController.getCategoryPageData
-);
+router.post('/getCategoryPageData', DataController.getCategoryPageData);
 
-router.post(
-  '/getServicePageData',
-  isAuthenticated,
-  DataController.getServicePageData
-);
+router.post('/getServicePageData', DataController.getServicePageData);
 
-router.post(
-  '/getMeetingPageData',
-  isAuthenticated,
-  DataController.getMeetingPageData
-);
+router.post('/getMeetingPageData', DataController.getMeetingPageData);
 
 router.post(
   '/meeting/findUnavailableDurations',
-  isAuthenticated,
   DataController.findUnavailableDurations
 );
 

@@ -84,12 +84,13 @@ const MeetingsSchema: Schema = new mongoose.Schema(
 
         // Fetch meetings scheduled for or after the given date
         const meetings = await (hostUserId
-          ? this.find({
+          ? // mabye can make this a whole ting
+            this.find({
               hostUserId,
-              startDate: { $gte: date }
+              endDate: { $gt: date }
             })
           : this.find({
-              startDate: { $gte: date }
+              endDate: { $gt: date }
             })
         )
           .lean()
