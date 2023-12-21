@@ -34,9 +34,9 @@ router.post(
 );
 
 router.post(
-  '/meeting/findAvailableDurations',
+  '/meeting/findUnavailableDurations',
   isAuthenticated,
-  DataController.findAvailableDurations
+  DataController.findUnavailableDurations
 );
 
 export default router;

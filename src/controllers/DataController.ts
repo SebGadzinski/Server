@@ -101,19 +101,18 @@ class DataController {
         userId = req.user.id;
       }
 
-      const availbleTimesRightNow = await Meetings.findAvailableDurations(
+      const unavailablePeriods = await Meetings.findUnavailableDurations(
         userId,
-        date.getMonth(),
-        date.getFullYear()
+        date
       );
 
-      res.send(new Result({ data: { availbleTimesRightNow }, success: true }));
+      res.send(new Result({ data: { unavailablePeriods }, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
   }
 
-  public async findAvailableDurations(req: any, res: any) {
+  public async findUnavailableDurations(req: any, res: any) {
     try {
       const date = new Date(req.body.date);
 
@@ -123,13 +122,12 @@ class DataController {
         userId = req.user.id;
       }
 
-      const availbleTimesRightNow = Meetings.findAvailableDurations(
+      const unavailablePeriods = await Meetings.findUnavailableDurations(
         userId,
-        date.getMonth(),
-        date.getFullYear()
+        date
       );
 
-      res.send(new Result({ data: { availbleTimesRightNow }, success: true }));
+      res.send(new Result({ data: unavailablePeriods, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }

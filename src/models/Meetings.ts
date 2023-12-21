@@ -26,7 +26,7 @@ interface IMeetingsModel extends Model<IMeetings> {
     serviceSlug: string,
     fromDate: Date
   ): Promise<Date>;
-  findAvailableDurations(hostUserId: string, month, year): Promise<Date>;
+  findUnavailableDurations(hostUserId: string, date: Date): Promise<Date>;
   meetingAt(
     categorySlug: string,
     serviceSlug: string,
@@ -73,9 +73,8 @@ const MeetingsSchema: Schema = new mongoose.Schema(
         return result[0]?.startDate || null;
       },
 
-      async findAvailableDurations(hostUserId, month, year) {
-        const startOfMonth = new Date(year, month, 1);
-        const endOfMonth = new Date(year, month + 1, 0);
+      async findUnavailableDurations(hostUserId, date) {
+        // Fetch unavailable dates
         const unavailableDates = await UnivailableDates.find(
           {},
           { startDate: 1, endDate: 1 }
@@ -83,42 +82,37 @@ const MeetingsSchema: Schema = new mongoose.Schema(
           .lean()
           .exec();
 
+        // Fetch meetings scheduled for or after the given date
         const meetings = await (hostUserId
           ? this.find({
               hostUserId,
-              startDate: { $lte: endOfMonth },
-              endDate: { $gte: startOfMonth }
+              startDate: { $gte: date }
             })
           : this.find({
-              startDate: { $lte: endOfMonth },
-              endDate: { $gte: startOfMonth }
+              startDate: { $gte: date }
             })
         )
           .lean()
           .exec();
 
+        // Combine and sort meetings and unavailable dates
         const events = [...meetings, ...unavailableDates].sort(
           (a, b) => a.startDate.getTime() - b.startDate.getTime()
         );
-        const availableDurations = [];
-        let lastEndDate = startOfMonth;
 
+        // Initialize the array to hold the unavailable durations
+        const unavailableDurations = [];
+
+        // Loop through the sorted events to build the list of unavailable durations
         for (const event of events) {
-          if (lastEndDate < event.startDate) {
-            availableDurations.push({
-              start: lastEndDate,
-              end: new Date(event.startDate.getTime() - 1000) // 1 second before the meeting starts
-            });
-          }
-          lastEndDate = new Date(event.endDate.getTime() + 1000); // 1 second after the meeting ends
+          unavailableDurations.push({
+            start: event.startDate,
+            end: event.endDate
+          });
         }
 
-        // Check for availability after the last meeting
-        if (lastEndDate < endOfMonth) {
-          availableDurations.push({ start: lastEndDate, end: endOfMonth });
-        }
-
-        return availableDurations;
+        // Return the list of unavailable durations
+        return unavailableDurations;
       }
     }
   }

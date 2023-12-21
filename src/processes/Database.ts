@@ -150,14 +150,16 @@ class Database {
     const startDate = new Date();
     const sebUser = await User.findOne({ email: 'seb.gadzy@gmail.com' }).lean();
 
-    const getRandomUser = (): IUser => {
-      return users[Math.floor(Math.random() * users.length)];
-    };
-
     const getMeeting = (user: IUser): any => {
       const start = new Date(startDate);
+      start.setMinutes(0);
+      start.setSeconds(0);
+      start.setMilliseconds(0);
       const end = new Date(start);
       end.setDate(end.getDate() + 1); // Set end date to one day after start
+      end.setMinutes(0);
+      end.setSeconds(0);
+      end.setMilliseconds(0);
 
       return {
         hostUserId: sebUser._id,
@@ -197,11 +199,6 @@ class Database {
     await univailableDates.save();
   }
 
-  private getRandomUser(users) {
-    const randomIndex = Math.floor(Math.random() * users.length);
-    return users[randomIndex];
-  }
-
   private async createAndInsertSampleCategories() {
     try {
       await Category.deleteMany({});
@@ -220,14 +217,6 @@ class Database {
       const endDateForUnavailable = new Date(
         currentDate.getTime() + oneAndHalfDayInMillis
       );
-
-      function getUnivDates() {
-        return {
-          name: 'Public Holidays',
-          startDate: startDateForUnavailable,
-          endDate: endDateForUnavailable
-        };
-      }
 
       const sampleCategories = [
         {
