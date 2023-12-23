@@ -4,7 +4,7 @@
  */
 import Result from '../classes/Result';
 import config from '../config';
-import { Category, Meetings, Token, User } from '../models';
+import { Category, Meetings, Token, User, Work } from '../models';
 
 class DataController {
   private static readonly publicCollections = {
@@ -155,10 +155,10 @@ class DataController {
       const startDate = new Date(req.body.startDate);
       const users: string[] = [];
 
-      if (!req?.user?.id) throw new Error('Sign Up Required');
-      if (!req.user.emailConfirmed) throw new Error('Email Confirmed Required');
+      if (!req?.user?.data.id) throw new Error('Sign Up Required');
+      // if (!req.user.data.emailConfirmed) throw new Error('Email Confirmed Required');
 
-      users.push(req.user.id);
+      users.push(req.user.data.id);
 
       // Validate input
       if (!categorySlug || !serviceSlug || users.length === 0 || !startDate) {
@@ -167,7 +167,7 @@ class DataController {
 
       // Check for time conflicts
       const endDate: Date = new Date(startDate.getTime());
-      endDate.setHours(endDate.getHours() + 1);
+      endDate.setMinutes(45);
       const conflictingMeetings = await Meetings.find({
         $or: [
           { startDate: { $lt: endDate, $gte: startDate } },
@@ -192,7 +192,23 @@ class DataController {
       });
       await newMeeting.save();
 
-      // Later attach to work item
+      // Create new work object and attach meeting
+      const newWork = new Work({
+        userId: req.user.data.id,
+        meetingId: newMeeting._id,
+        categorySlug,
+        serviceSlug,
+        workItems: [],
+        paymentItems: [],
+        initialPayment: 0,
+        subscription: { payment: 0, interval: 'NA' },
+        paymentStatus: 'Unset',
+        status: 'Meeting',
+        createdDate: new Date(),
+        createdBy: req.user.data.id,
+        updatedBy: req.user.data.id
+      });
+      await newWork.save();
 
       res.send(new Result({ data: newMeeting, success: true }));
     } catch (err) {
