@@ -11,7 +11,7 @@ import {
 
 const router = express.Router({});
 
-router.post('/col', isAuthenticated, DataController.getCollection);
+router.get('/col', isAuthenticated, DataController.getCollection);
 
 router.get('/getHomePageData', DataController.getHomePageData);
 
@@ -27,5 +27,23 @@ router.post(
 );
 
 router.post('/meeting/book', isAuthenticated, DataController.bookMeeting);
+
+router.get('/getWorkPageData', isAuthenticated, DataController.getWorkPageData);
+
+router.post(
+  '/getWorkConfirmationPageData',
+  isAuthenticated,
+  DataController.getWorkConfirmationPageData
+);
+
+router.post('/work/confirm', isAuthenticated, DataController.confirmWork);
+
+router.post(
+  '/getWorkCancelPageData',
+  isAuthenticated,
+  DataController.getWorkCancelPageData
+);
+
+router.post('/work/cancel', isAuthenticated, DataController.cancelWork);
 
 export default router;

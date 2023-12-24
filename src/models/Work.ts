@@ -33,12 +33,13 @@ export interface IWork extends Document {
   subscription: { payment: number; interval: string };
   paymentStatus: string;
   status: string;
-  createdDate: Date;
   createdBy: string;
   updatedBy: string;
 }
 
-interface IWorkModel extends Model<IWork> {}
+interface IWorkModel extends Model<IWork> {
+  getViewComponent(workId: string): Promise<any>;
+}
 
 const WorkSchema: Schema = new mongoose.Schema(
   {
@@ -76,14 +77,64 @@ const WorkSchema: Schema = new mongoose.Schema(
     },
     paymentStatus: { type: String, required: true },
     status: { type: String, required: true },
-    createdDate: { type: Date, required: true },
     createdBy: { type: String, required: true },
     updatedBy: { type: String, required: true }
   },
   {
     timestamps: true,
     toJSON: { transform },
-    statics: {}
+    statics: {
+      async getViewComponent(workId: string) {
+        const workAggregation = Work.aggregate([
+          {
+            $match: {
+              $expr: {
+                $eq: ['$_id', { $toObjectId: workId }]
+              }
+            }
+          },
+          {
+            $lookup: {
+              from: 'users', // Replace with your users collection name
+              localField: 'userId',
+              foreignField: '_id',
+              as: 'userDetails'
+            }
+          },
+          {
+            $lookup: {
+              from: 'categories', // Replace with your categories collection name
+              localField: 'categorySlug',
+              foreignField: 'slug',
+              as: 'categoryDetails'
+            }
+          },
+          { $unwind: '$userDetails' },
+          { $unwind: '$categoryDetails' },
+          {
+            $project: {
+              'user.email': '$userDetails.email',
+              'category': '$categoryDetails.name',
+              'service': '$serviceSlug', // Assuming this corresponds to the service name
+              'status': 1,
+              'workItems': 1,
+              'paymentItems': 1,
+              'payment': {
+                initialPayment: '$initialPayment',
+                subscription: '$subscription'
+              },
+              'paymentStatus': 1
+            }
+          }
+        ]);
+
+        const workData = await workAggregation.exec();
+
+        if (!workData.length) throw new Error('Work not found');
+
+        return workData[0];
+      }
+    }
   }
 );
 

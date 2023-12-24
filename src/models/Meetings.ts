@@ -12,6 +12,7 @@ export interface IMeetings extends Document {
   categorySlug: string;
   serviceSlug: string;
   users: [Schema.Types.ObjectId];
+  link: string;
   startDate: Date;
   endDate: Date;
   createdBy: string;
@@ -40,6 +41,7 @@ const MeetingsSchema: Schema = new mongoose.Schema(
     categorySlug: { type: String, required: true },
     serviceSlug: { type: String, required: true },
     users: { type: [Schema.Types.ObjectId], required: true },
+    link: { type: String, required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true }
   },

@@ -180,6 +180,10 @@ class DataController {
         throw new Error('Time slot is not available');
       }
 
+      // TODO: Get google meetings or zoom link
+      const link =
+        'https://ca.search.yahoo.com/search?fr=mcafee&type=E211CA885G0&p=meeting';
+
       // Add Meeting
       const newMeeting = new Meetings({
         // Me for now
@@ -187,6 +191,7 @@ class DataController {
         categorySlug,
         serviceSlug,
         users,
+        link,
         startDate,
         endDate
       });
@@ -201,7 +206,7 @@ class DataController {
         workItems: [],
         paymentItems: [],
         initialPayment: 0,
-        subscription: { payment: 0, interval: 'NA' },
+        subscription: { payment: 0, interval: 'N/A' },
         paymentStatus: 'Unset',
         status: 'Meeting',
         createdDate: new Date(),
@@ -211,6 +216,171 @@ class DataController {
       await newWork.save();
 
       res.send(new Result({ data: newMeeting, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getWorkPageData(req: any, res: any) {
+    try {
+      const query: any = {};
+
+      if (!req?.user?.data.roles.includes('admin')) {
+        query.userId = req.user.data.id;
+      }
+
+      const workAggregation = Work.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: 'users', // Replace with your users collection name
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userDetails'
+          }
+        },
+        {
+          $lookup: {
+            from: 'categories', // Replace with your categories collection name
+            localField: 'categorySlug',
+            foreignField: 'slug',
+            as: 'categoryDetails'
+          }
+        },
+        {
+          $lookup: {
+            from: 'meetings', // Replace with your categories collection name
+            localField: 'meetingId',
+            foreignField: '_id',
+            as: 'meetingDetails'
+          }
+        },
+        { $unwind: '$userDetails' },
+        { $unwind: '$categoryDetails' },
+        { $unwind: '$meetingDetails' },
+        {
+          $project: {
+            workId: '$_id',
+            email: '$userDetails.email',
+            category: '$categoryDetails.name',
+            service: '$serviceSlug', // Assuming this corresponds to the service name
+            status: 1,
+            meetingLink: '$meetingDetails.link',
+            createdDate: '$createdAt',
+            subscription: '$subscription' // Include if needed
+          }
+        }
+      ]);
+
+      const workData = await workAggregation.exec();
+
+      res.send(new Result({ data: { work: workData }, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getWorkConfirmationPageData(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.getViewComponent(req?.body.workId);
+
+      // if not admin and not this user send an error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.id.toString() !== work.userId.toString()
+      ) {
+        throw new Error('Access Denied');
+      }
+
+      res.send(new Result({ data: work, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async confirmWork(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.findOne({ _id: req?.body?.workId });
+      if (!work) throw new Error('Work not found');
+
+      // if not admin and not this user send a error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.id !== work.userId
+      ) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      // If some payment items got completed do this but it can be done by
+      // admin anyway w editing
+      work.status = 'User Accepted';
+      work.paymentStatus = 'Some Completed';
+      work.save();
+
+      res.send(new Result({ success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getWorkCancelPageData(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.getViewComponent(req?.body.workId);
+
+      // if not admin and not this user send a error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.id !== work.userId
+      ) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      const data = {
+        work,
+        cancelationFee: 0
+      };
+
+      // TODO: Determine cancellation fee
+      // This should be based off of how long in the work process you are
+      // in and what work had already been done
+
+      res.send(new Result({ data, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async cancelWork(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.findOne({ _id: req?.body?.workId });
+      if (!work) throw new Error('Work not found');
+
+      // if not admin and not this user send a error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.id !== work.userId
+      ) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      // If some payment items got completed do this but it can be done by
+      // admin anyway w editing
+      work.status = 'Cancelled';
+      work.paymentStatus = 'Completed';
+      work.save();
+
+      res.send(new Result({ success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
