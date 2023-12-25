@@ -66,4 +66,6 @@ router.post(
   DataController.upsertWork
 );
 
+router.post('/work', isAuthenticated, DataController.getWorkComponent);
+
 export default router;

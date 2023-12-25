@@ -114,7 +114,20 @@ const WorkSchema: Schema = new mongoose.Schema(
             $project: {
               'user.email': '$userDetails.email',
               'category': '$categoryDetails.name',
-              'service': '$serviceSlug', // Assuming this corresponds to the service name
+              'service': {
+                $let: {
+                  vars: {
+                    serviceArray: {
+                      $filter: {
+                        input: '$categoryDetails.services',
+                        as: 'service',
+                        cond: { $eq: ['$$service.slug', '$serviceSlug'] }
+                      }
+                    }
+                  },
+                  in: { $arrayElemAt: ['$$serviceArray.name', 0] }
+                }
+              }, // Assuming this corresponds to the service name
               'status': 1,
               'workItems': 1,
               'paymentItems': 1,
@@ -130,16 +143,6 @@ const WorkSchema: Schema = new mongoose.Schema(
         const workData = await workAggregation.exec();
 
         if (!workData.length) throw new Error('Work not found');
-
-        workData[0].service = await Category.findOne(
-          {
-            name: workData[0].category,
-            services: { $elemMatch: { slug: workData[0].service } }
-          },
-          { 'services.$': 1 }
-        ).lean();
-
-        workData[0].service = workData[0].service.services[0].name;
 
         return workData[0];
       }

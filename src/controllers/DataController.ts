@@ -233,7 +233,7 @@ class DataController {
         { $match: query },
         {
           $lookup: {
-            from: 'users', // Replace with your users collection name
+            from: 'users',
             localField: 'userId',
             foreignField: '_id',
             as: 'userDetails'
@@ -241,7 +241,7 @@ class DataController {
         },
         {
           $lookup: {
-            from: 'categories', // Replace with your categories collection name
+            from: 'categories',
             localField: 'categorySlug',
             foreignField: 'slug',
             as: 'categoryDetails'
@@ -249,7 +249,7 @@ class DataController {
         },
         {
           $lookup: {
-            from: 'meetings', // Replace with your categories collection name
+            from: 'meetings',
             localField: 'meetingId',
             foreignField: '_id',
             as: 'meetingDetails'
@@ -263,11 +263,24 @@ class DataController {
             workId: '$_id',
             email: '$userDetails.email',
             category: '$categoryDetails.name',
-            service: '$serviceSlug', // Assuming this corresponds to the service name
+            service: {
+              $let: {
+                vars: {
+                  serviceArray: {
+                    $filter: {
+                      input: '$categoryDetails.services',
+                      as: 'service',
+                      cond: { $eq: ['$$service.slug', '$serviceSlug'] }
+                    }
+                  }
+                },
+                in: { $arrayElemAt: ['$$serviceArray.name', 0] }
+              }
+            },
             status: 1,
             meetingLink: '$meetingDetails.link',
             createdDate: '$createdAt',
-            subscription: '$subscription' // Include if needed
+            subscription: '$subscription'
           }
         }
       ]);
@@ -276,7 +289,10 @@ class DataController {
 
       res.send(new Result({ data: { work: workData }, success: true }));
     } catch (err) {
-      res.send(new Result({ message: err.message, success: false }));
+      console.error('Error in getWorkPageData:', err); // Improved error logging
+      res
+        .status(500)
+        .send(new Result({ message: err.message, success: false }));
     }
   }
 
@@ -442,6 +458,7 @@ class DataController {
           'N/A'
         ],
         paymentStatusOptions: ['Some Completed', 'Completed', 'N/A'],
+        subscriptionIntervalOptions: ['7 Days', '1 Months', '1 Years'],
         work: await Work.getViewComponent(req?.body.workId)
       };
 
@@ -520,6 +537,26 @@ class DataController {
       await work.save();
 
       res.send(new Result({ success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getWorkComponent(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.getViewComponent(req?.body.workId);
+
+      // if not admin and not this user send an error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.id.toString() !== work.userId.toString()
+      ) {
+        throw new Error('Access Denied');
+      }
+
+      res.send(new Result({ data: work, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
