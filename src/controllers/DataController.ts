@@ -385,6 +385,145 @@ class DataController {
       res.send(new Result({ message: err.message, success: false }));
     }
   }
+
+  public async getViewComponent(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.getViewComponent(req?.body.workId);
+
+      // if not admin and not this user send a error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.id !== work.userId
+      ) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      res.send(new Result({ data: work, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getWorkEditorPageData(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      // Have to be a editor to be here
+      if (!req?.user?.data.roles.includes('admin')) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      const data = {
+        usersOptions: (await User.find({}, { email: 1 })).map((x) => x.email),
+        categoryOptions: (await Category.find({}, { name: 1 })).map(
+          (x) => x.name
+        ),
+        servicesOptions: await Category.aggregate([
+          { $group: { _id: '$name', services: { $push: '$services.name' } } },
+          { $project: { _id: 0, name: '$_id', services: 1 } }
+        ]).then((results) => {
+          // Create a dictionary from the results
+          const servicesDict = {};
+          results.forEach((item) => {
+            servicesDict[item.name] = item.services;
+          });
+          return servicesDict;
+        }),
+        workStatusOptions: [
+          'Meeting',
+          'Completed',
+          'Confirmation Required',
+          'User Accepted',
+          'Needs Attention',
+          'N/A'
+        ],
+        paymentStatusOptions: ['Some Completed', 'Completed', 'N/A'],
+        work: await Work.getViewComponent(req?.body.workId)
+      };
+
+      res.send(new Result({ data, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async upsertWork(req: any, res: any) {
+    try {
+      // Extracting data from request body
+      const {
+        _id,
+        workItems,
+        paymentItems,
+        paymentStatus,
+        status,
+        user,
+        category,
+        service,
+        payment
+      } = req.body;
+
+      // Find the user based on the email
+      const foundUser = await User.findOne({ email: user.email });
+      if (!foundUser) throw new Error('User not found');
+
+      // Find or create the work item
+      let work = await Work.findOne({ _id });
+      if (!work) {
+        // If work not found, create a new one
+        work = new Work({
+          _id,
+          userId: foundUser._id /* other required fields */
+        });
+      }
+
+      const myCategory = await Category.findOne(
+        {
+          name: category
+        },
+        {
+          slug: 1,
+          services: {
+            name: 1,
+            slug: 1
+          }
+        }
+      ).lean();
+      const myServiceSlug = myCategory.services.find(
+        (x) => x.name === service
+      ).slug;
+
+      // Map the data to the work model
+      work.workItems = workItems.map((x) => {
+        if (x._id.includes('new')) {
+          delete x._id;
+        }
+        return x;
+      });
+      work.paymentItems = paymentItems.map((x) => {
+        if (x._id.includes('new')) {
+          delete x._id;
+        }
+        return x;
+      });
+      work.paymentStatus = paymentStatus;
+      work.status = status;
+      work.categorySlug = myCategory.slug;
+      work.serviceSlug = myServiceSlug;
+      work.initialPayment = payment.initialPayment;
+      work.subscription = payment.subscription;
+
+      // Save the work item
+      await work.save();
+
+      res.send(new Result({ success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
 }
 
 export default new DataController();

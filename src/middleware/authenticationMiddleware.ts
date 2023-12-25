@@ -74,20 +74,18 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
   };
 };
 
-const hasRole = (
-  role: string,
-  req: any,
-  res: any,
-  next: express.NextFunction
-) => {
-  if (!req.user.data.roles.includes(role)) {
-    return res.status(403).json({
-      message: 'You are not allowed to access this resource.',
-      success: false
-    });
-  }
+const hasRole = (role: string) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.data.roles.includes(role)) {
+      // TODO: Security!!!
+      return res.status(403).json({
+        message: 'You are not allowed to access this resource.',
+        success: false
+      });
+    }
 
-  next();
+    next();
+  };
 };
 
 export { isAuthenticated, isUser, hasRole };

@@ -4,6 +4,7 @@
  */
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 import { transform } from '../utils/transform';
+import Category from './Category';
 
 export interface IWork extends Document {
   _id: Schema.Types.ObjectId;
@@ -13,7 +14,7 @@ export interface IWork extends Document {
   serviceSlug: string;
   workItems: [
     {
-      id: string;
+      _id: Schema.Types.ObjectId;
       name: string;
       description: string;
       links: [{ name: string; url: string }];
@@ -22,7 +23,7 @@ export interface IWork extends Document {
   ];
   paymentItems: [
     {
-      id: string;
+      _id: Schema.Types.ObjectId;
       name: string;
       description: string;
       payment: number;
@@ -49,7 +50,6 @@ const WorkSchema: Schema = new mongoose.Schema(
     serviceSlug: { type: String, required: true },
     workItems: [
       {
-        id: { type: String, required: true },
         name: { type: String, required: true },
         description: { type: String, required: true },
         links: [
@@ -63,7 +63,6 @@ const WorkSchema: Schema = new mongoose.Schema(
     ],
     paymentItems: [
       {
-        id: { type: String, required: true },
         name: { type: String, required: true },
         description: { type: String, required: true },
         payment: { type: Number, required: true },
@@ -131,6 +130,16 @@ const WorkSchema: Schema = new mongoose.Schema(
         const workData = await workAggregation.exec();
 
         if (!workData.length) throw new Error('Work not found');
+
+        workData[0].service = await Category.findOne(
+          {
+            name: workData[0].category,
+            services: { $elemMatch: { slug: workData[0].service } }
+          },
+          { 'services.$': 1 }
+        ).lean();
+
+        workData[0].service = workData[0].service.services[0].name;
 
         return workData[0];
       }

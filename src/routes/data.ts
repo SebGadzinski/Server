@@ -5,6 +5,7 @@
 import express from 'express';
 import DataController from '../controllers/DataController';
 import {
+  hasRole,
   isAuthenticated,
   isUser
 } from '../middleware/authenticationMiddleware';
@@ -45,5 +46,24 @@ router.post(
 );
 
 router.post('/work/cancel', isAuthenticated, DataController.cancelWork);
+
+router.post(
+  '/work/viewComponent',
+  isAuthenticated,
+  DataController.getViewComponent
+);
+
+router.post(
+  '/getWorkEditorPageData',
+  isAuthenticated,
+  DataController.getWorkEditorPageData
+);
+
+router.post(
+  '/work/upsert',
+  isAuthenticated,
+  hasRole('admin'),
+  DataController.upsertWork
+);
 
 export default router;
