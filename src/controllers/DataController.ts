@@ -206,8 +206,8 @@ class DataController {
         workItems: [],
         paymentItems: [],
         initialPayment: 0,
-        subscription: { payment: 0, interval: 'N/A' },
-        paymentStatus: 'Unset',
+        subscription: [],
+        initialPaymentStatus: 'Unset',
         status: 'Meeting',
         createdDate: new Date(),
         createdBy: req.user.data.id,
@@ -230,7 +230,13 @@ class DataController {
       }
 
       const workAggregation = Work.aggregate([
-        { $match: query },
+        {
+          $match: {
+            $expr: {
+              $eq: ['$userId', { $toObjectId: query.userId }]
+            }
+          }
+        },
         {
           $lookup: {
             from: 'users',
@@ -280,7 +286,12 @@ class DataController {
             status: 1,
             meetingLink: '$meetingDetails.link',
             createdDate: '$createdAt',
-            subscription: '$subscription'
+            subscription: {
+              $ifNull: [
+                { $arrayElemAt: [{ $slice: ['$subscription', -1] }, 0] },
+                { payment: 0, interval: 'N/A', paymentsMade: 0 }
+              ]
+            }
           }
         }
       ]);
@@ -335,7 +346,7 @@ class DataController {
       // If some payment items got completed do this but it can be done by
       // admin anyway w editing
       work.status = 'User Accepted';
-      work.paymentStatus = 'Some Completed';
+      work.initialPaymentStatus = 'Some Completed';
       work.save();
 
       res.send(new Result({ success: true }));
@@ -393,7 +404,7 @@ class DataController {
       // If some payment items got completed do this but it can be done by
       // admin anyway w editing
       work.status = 'Cancelled';
-      work.paymentStatus = 'Completed';
+      work.initialPaymentStatus = 'Completed';
       work.save();
 
       res.send(new Result({ success: true }));
@@ -457,8 +468,8 @@ class DataController {
           'Needs Attention',
           'N/A'
         ],
-        paymentStatusOptions: ['Some Completed', 'Completed', 'N/A'],
-        subscriptionIntervalOptions: ['7 Days', '1 Months', '1 Years'],
+        paymentStatusOptions: ['Some Completed', 'Completed', 'N/A', 'Unset'],
+        subscriptionIntervalOptions: ['N/A', '7 Days', '1 Months', '1 Years'],
         work: await Work.getViewComponent(req?.body.workId)
       };
 
@@ -475,7 +486,7 @@ class DataController {
         _id,
         workItems,
         paymentItems,
-        paymentStatus,
+        initialPaymentStatus,
         status,
         user,
         category,
@@ -493,7 +504,8 @@ class DataController {
         // If work not found, create a new one
         work = new Work({
           _id,
-          userId: foundUser._id /* other required fields */
+          userId: foundUser._id /* other required fields */,
+          subscription: []
         });
       }
 
@@ -526,14 +538,27 @@ class DataController {
         }
         return x;
       });
-      work.paymentStatus = paymentStatus;
+      work.initialPaymentStatus = initialPaymentStatus;
       work.status = status;
       work.categorySlug = myCategory.slug;
       work.serviceSlug = myServiceSlug;
       work.initialPayment = payment.initialPayment;
-      work.subscription = payment.subscription;
 
-      // Save the work item
+      const subIndex: number = work.subscription.length - 1;
+      if (payment.subscription.interval === 'N/A') {
+        payment.subscription.payment = 0;
+      }
+      if (subIndex < 0) {
+        payment.subscription.paymentsMade = 0;
+        work.subscription = [payment.subscription];
+      } else if (
+        work.subscription[subIndex].interval !==
+          payment.subscription.interval ||
+        work.subscription[subIndex].payment !== payment.subscription.payment
+      ) {
+        work.subscription.push(payment.subscription);
+      }
+
       await work.save();
 
       res.send(new Result({ success: true }));
@@ -551,12 +576,183 @@ class DataController {
       // if not admin and not this user send an error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.id.toString() !== work.userId.toString()
+        req?.user?.data.id !== work.user.userId
       ) {
         throw new Error('Access Denied');
       }
 
       res.send(new Result({ data: work, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getUserPageData(req: any, res: any) {
+    try {
+      const users = await User.aggregate([
+        {
+          $lookup: {
+            from: 'works', // Replace with your 'Work' collection name
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'works'
+          }
+        },
+        {
+          $project: {
+            userId: '$_id',
+            fullName: 1,
+            email: 1,
+            emailConfirmed: 1,
+            phoneNumber: 1,
+            mfa: 1,
+            works: 1 // Include the array of work items
+          }
+        },
+        {
+          $addFields: {
+            works: {
+              $map: {
+                input: '$works',
+                as: 'work',
+                in: {
+                  workId: '$$work._id',
+                  userId: '$$work.userId',
+                  meetingId: '$$work.meetingId',
+                  categorySlug: '$$work.categorySlug',
+                  serviceSlug: '$$work.serviceSlug',
+                  workItems: '$$work.workItems',
+                  paymentItems: '$$work.paymentItems',
+                  initialPayment: '$$work.initialPayment',
+                  subscription: '$$work.subscription',
+                  initialPaymentStatus: '$$work.initialPaymentStatus'
+                }
+              }
+            }
+          }
+        }
+      ]);
+
+      // Get Users and data
+      for (let i = 0; i < users.length; i++) {
+        let monthlyCost = 0;
+        let totalPaymentsMadeCost = 0;
+        // Calculate monthly subscription costs
+
+        for (let y = 0; y < users[i].works.length; y++) {
+          // initial payment
+          if (users[i].works[y].initialPaymentStatus === 'Completed') {
+            totalPaymentsMadeCost += users[i].works[y].initialPayment;
+          }
+
+          // subscription
+          if (users[i].works[y].subscription.length > 0) {
+            for (let t = 0; t < users[i].works[y].subscription.length; t++) {
+              totalPaymentsMadeCost +=
+                users[i].works[y].subscription[t].paymentsMade *
+                users[i].works[y].subscription[t].payment;
+            }
+
+            const currentSub =
+              users[i].works[y].subscription[
+                users[i].works[y].subscription.length - 1
+              ];
+            if (currentSub.interval === '7 Days') {
+              monthlyCost += currentSub.payment * 4;
+            } else if (currentSub.interval === '1 Months') {
+              monthlyCost += currentSub.payment;
+            } else if (currentSub.interval === '1 Years') {
+              monthlyCost += currentSub.payment / 12;
+            }
+          }
+
+          // each payment item
+          for (let z = 0; z < users[i].works[y].paymentItems.length; z++) {
+            if (users[i].works[y].paymentItems[z].status === 'Completed') {
+              totalPaymentsMadeCost +=
+                users[i].works[y].paymentItems[z].payment;
+            }
+          }
+        }
+
+        users[i].monthlyCost = monthlyCost;
+        users[i].totalCost = totalPaymentsMadeCost;
+        delete users[i].works;
+      }
+
+      res.send(new Result({ data: users, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getProfile(req: any, res: any) {
+    try {
+      // if not admin
+      const userId = req?.body?.userId;
+
+      // If userId is a thing and its not the user who is on check for admin
+      if (userId && !req?.user?.data.roles.includes('admin')) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      // If no userId then retrun the users own
+      let user: any = {};
+      const queryUserId = userId ?? req.user.data.id;
+      const selectionQuery: any = {
+        _id: 0,
+        name: '$fullName',
+        email: 1,
+        phoneNumber: 1
+      };
+      if (req?.user?.data.roles.includes('admin')) {
+        selectionQuery.emailConfirmed = 1;
+      }
+
+      user = await User.findOne({ _id: queryUserId }, selectionQuery);
+
+      if (!user?.phoneNumber) {
+        user.phoneNumber = '';
+      }
+
+      res.send(new Result({ data: user, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async saveProfile(req: any, res: any) {
+    try {
+      // if not admin
+      const userId = req?.body?.userId;
+
+      // If userId is a thing and its not the user who is on check for admin
+      if (userId && !req?.user?.data.roles.includes('admin')) {
+        // TODO: SECURITY!!
+        throw new Error('Access Denied');
+      }
+
+      const setQuery: any = {
+        fullName: req.body.user.name, // New name value
+        email: req.body.user.email,
+        phoneNumber: req.body.user.phoneNumber
+      };
+
+      if (req?.user?.data.roles.includes('admin')) {
+        setQuery.emailConfirmed = req.body.user.emailConfirmed;
+      }
+
+      const queryUserId = userId ?? req.user.data.id;
+
+      await User.updateOne(
+        { _id: queryUserId }, // Filter to match the user to update
+        {
+          $set: setQuery
+        }
+      );
+
+      res.send(new Result({ success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }

@@ -31,8 +31,8 @@ export interface IWork extends Document {
     }
   ];
   initialPayment: number;
-  subscription: { payment: number; interval: string };
-  paymentStatus: string;
+  subscription: [{ payment: number; interval: string; paymentsMade: number }];
+  initialPaymentStatus: string;
   status: string;
   createdBy: string;
   updatedBy: string;
@@ -70,11 +70,14 @@ const WorkSchema: Schema = new mongoose.Schema(
       }
     ],
     initialPayment: { type: Number, required: true },
-    subscription: {
-      payment: { type: Number, required: true },
-      interval: { type: String, required: true }
-    },
-    paymentStatus: { type: String, required: true },
+    subscription: [
+      {
+        payment: { type: Number, required: true },
+        interval: { type: String, required: true },
+        paymentsMade: { type: Number, required: true }
+      }
+    ],
+    initialPaymentStatus: { type: String, required: true },
     status: { type: String, required: true },
     createdBy: { type: String, required: true },
     updatedBy: { type: String, required: true }
@@ -112,6 +115,9 @@ const WorkSchema: Schema = new mongoose.Schema(
           { $unwind: '$categoryDetails' },
           {
             $project: {
+              'user.userId': {
+                $toString: '$userDetails._id'
+              },
               'user.email': '$userDetails.email',
               'category': '$categoryDetails.name',
               'service': {
@@ -133,9 +139,14 @@ const WorkSchema: Schema = new mongoose.Schema(
               'paymentItems': 1,
               'payment': {
                 initialPayment: '$initialPayment',
-                subscription: '$subscription'
+                subscription: {
+                  $ifNull: [
+                    { $arrayElemAt: [{ $slice: ['$subscription', -1] }, 0] },
+                    { payment: 0, interval: 'N/A', paymentsMade: 0 }
+                  ]
+                }
               },
-              'paymentStatus': 1
+              'initialPaymentStatus': 1
             }
           }
         ]);

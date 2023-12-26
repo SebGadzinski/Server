@@ -68,4 +68,15 @@ router.post(
 
 router.post('/work', isAuthenticated, DataController.getWorkComponent);
 
+router.get(
+  '/admin/getUserPageData',
+  isAuthenticated,
+  hasRole('admin'),
+  DataController.getUserPageData
+);
+
+router.post('/getProfile', isAuthenticated, DataController.getProfile);
+
+router.post('/saveProfile', isAuthenticated, DataController.saveProfile);
+
 export default router;
