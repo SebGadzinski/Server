@@ -30,9 +30,11 @@ export interface IWork extends Document {
       status: string;
     }
   ];
-  initialPayment: number;
   subscription: [{ payment: number; interval: string; paymentsMade: number }];
+  initialPayment: number;
   initialPaymentStatus: string;
+  cancellationPayment: number;
+  cancellationPaymentStatus: string;
   status: string;
   createdBy: string;
   updatedBy: string;
@@ -69,7 +71,6 @@ const WorkSchema: Schema = new mongoose.Schema(
         status: { type: String, required: true }
       }
     ],
-    initialPayment: { type: Number, required: true },
     subscription: [
       {
         payment: { type: Number, required: true },
@@ -77,7 +78,10 @@ const WorkSchema: Schema = new mongoose.Schema(
         paymentsMade: { type: Number, required: true }
       }
     ],
+    initialPayment: { type: Number, required: true },
     initialPaymentStatus: { type: String, required: true },
+    cancellationPayment: { type: Number, required: true },
+    cancellationPaymentStatus: { type: String, required: true },
     status: { type: String, required: true },
     createdBy: { type: String, required: true },
     updatedBy: { type: String, required: true }
@@ -139,6 +143,7 @@ const WorkSchema: Schema = new mongoose.Schema(
               'paymentItems': 1,
               'payment': {
                 initialPayment: '$initialPayment',
+                cancellationPayment: '$cancellationPayment',
                 subscription: {
                   $ifNull: [
                     { $arrayElemAt: [{ $slice: ['$subscription', -1] }, 0] },
@@ -146,7 +151,8 @@ const WorkSchema: Schema = new mongoose.Schema(
                   ]
                 }
               },
-              'initialPaymentStatus': 1
+              'initialPaymentStatus': 1,
+              'cancellationPaymentStatus': 1
             }
           }
         ]);

@@ -205,9 +205,11 @@ class DataController {
         serviceSlug,
         workItems: [],
         paymentItems: [],
-        initialPayment: 0,
         subscription: [],
+        initialPayment: 0,
         initialPaymentStatus: 'Unset',
+        cancellationPayment: 0,
+        cancellationPaymentStatus: 'Unset',
         status: 'Meeting',
         createdDate: new Date(),
         createdBy: req.user.data.id,
@@ -224,18 +226,23 @@ class DataController {
   public async getWorkPageData(req: any, res: any) {
     try {
       const query: any = {};
+      const isAdmin = req?.user?.data.roles.includes('admin');
 
-      if (!req?.user?.data.roles.includes('admin')) {
+      if (!isAdmin) {
         query.userId = req.user.data.id;
       }
 
-      const workAggregation = Work.aggregate([
-        {
-          $match: {
+      const matchQuery: any = !isAdmin
+        ? {
             $expr: {
               $eq: ['$userId', { $toObjectId: query.userId }]
             }
           }
+        : {};
+
+      const workAggregation = Work.aggregate([
+        {
+          $match: matchQuery
         },
         {
           $lookup: {
@@ -337,7 +344,7 @@ class DataController {
       // if not admin and not this user send a error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.id !== work.userId
+        req?.user?.data.id !== work.userId.toString()
       ) {
         // TODO: SECURITY!!
         throw new Error('Access Denied');
@@ -347,6 +354,7 @@ class DataController {
       // admin anyway w editing
       work.status = 'User Accepted';
       work.initialPaymentStatus = 'Some Completed';
+      work.cancellationPaymentStatus = 'Some Completed';
       work.save();
 
       res.send(new Result({ success: true }));
@@ -364,15 +372,14 @@ class DataController {
       // if not admin and not this user send a error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.id !== work.userId
+        req?.user?.data.id !== work.userId.toString()
       ) {
         // TODO: SECURITY!!
         throw new Error('Access Denied');
       }
 
       const data = {
-        work,
-        cancelationFee: 0
+        work
       };
 
       // TODO: Determine cancellation fee
@@ -395,7 +402,7 @@ class DataController {
       // if not admin and not this user send a error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.id !== work.userId
+        req?.user?.data.id !== work.userId.toString()
       ) {
         // TODO: SECURITY!!
         throw new Error('Access Denied');
@@ -405,6 +412,7 @@ class DataController {
       // admin anyway w editing
       work.status = 'Cancelled';
       work.initialPaymentStatus = 'Completed';
+      work.cancellationPaymentStatus = 'Some Completed';
       work.save();
 
       res.send(new Result({ success: true }));
@@ -487,6 +495,7 @@ class DataController {
         workItems,
         paymentItems,
         initialPaymentStatus,
+        cancellationPaymentStatus,
         status,
         user,
         category,
@@ -539,6 +548,7 @@ class DataController {
         return x;
       });
       work.initialPaymentStatus = initialPaymentStatus;
+      work.cancellationPaymentStatus = cancellationPaymentStatus;
       work.status = status;
       work.categorySlug = myCategory.slug;
       work.serviceSlug = myServiceSlug;
@@ -625,7 +635,8 @@ class DataController {
                   paymentItems: '$$work.paymentItems',
                   initialPayment: '$$work.initialPayment',
                   subscription: '$$work.subscription',
-                  initialPaymentStatus: '$$work.initialPaymentStatus'
+                  initialPaymentStatus: '$$work.initialPaymentStatus',
+                  cancellationPaymentStatus: '$$work.cancellationPaymentStatus'
                 }
               }
             }
