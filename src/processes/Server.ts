@@ -9,6 +9,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 
 import config from '../config';
+import { IPSecurity } from '../middleware/securityMiddleware';
 import appRoutes from '../routes/app';
 import authenticationRoutes from '../routes/authentication';
 import dataRoutes from '../routes/data';
@@ -43,6 +44,7 @@ class Server {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     // Map routes.
+    this.app.use(IPSecurity);
     this.app.use('/api/user', userRoutes);
     this.app.use('/api/auth', authenticationRoutes);
     this.app.use('/api/app', appRoutes);

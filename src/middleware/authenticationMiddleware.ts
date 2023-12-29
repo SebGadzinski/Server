@@ -1,11 +1,14 @@
 /**
  * @file JWT authentication middleware.
- * @author Ivan Kockarevic
+ * @author Sebastian Gadzinski
  */
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config';
 import { Token } from '../models';
+import SecurityService from '../services/SecurityService';
+
+const security = SecurityService.getInstance();
 
 // Request is any because we want to assign the decoded user object to it.
 const isAuthenticated = (req: any, res: any, next: express.NextFunction) => {
@@ -64,9 +67,11 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
           req.user.data.roles.includes(minRole)));
 
     if (!passed) {
-      return res.status(403).json({
-        message: 'You are not allowed to access this resource.',
-        success: false
+      security.checkAndBlockIP(req.ip).then(() => {
+        return res.status(403).json({
+          message: 'You are not allowed to access this resource.',
+          success: false
+        });
       });
     }
 
@@ -77,10 +82,11 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
 const hasRole = (role: string) => {
   return (req, res, next) => {
     if (!req.user || !req.user.data.roles.includes(role)) {
-      // TODO: Security!!!
-      return res.status(403).json({
-        message: 'You are not allowed to access this resource.',
-        success: false
+      security.checkAndBlockIP(req.ip).then(() => {
+        return res.status(403).json({
+          message: 'You are not allowed to access this resource.',
+          success: false
+        });
       });
     }
 

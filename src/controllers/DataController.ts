@@ -5,6 +5,9 @@
 import Result from '../classes/Result';
 import config from '../config';
 import { Category, Meetings, Token, User, Work } from '../models';
+import SecurityService from '../services/SecurityService';
+
+const security = SecurityService.getInstance();
 
 class DataController {
   private static readonly publicCollections = {
@@ -323,9 +326,9 @@ class DataController {
       // if not admin and not this user send an error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.id.toString() !== work.userId.toString()
+        req?.user?.data.id !== work.user.userId.toString()
       ) {
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       res.send(new Result({ data: work, success: true }));
@@ -346,8 +349,7 @@ class DataController {
         !req?.user?.data.roles.includes('admin') &&
         req?.user?.data.id !== work.userId.toString()
       ) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       // If some payment items got completed do this but it can be done by
@@ -372,10 +374,9 @@ class DataController {
       // if not admin and not this user send a error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.data.id !== work.userId.toString()
+        req?.user?.data.id !== work.user.userId.toString()
       ) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       const data = {
@@ -404,8 +405,7 @@ class DataController {
         !req?.user?.data.roles.includes('admin') &&
         req?.user?.data.id !== work.userId.toString()
       ) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       // If some payment items got completed do this but it can be done by
@@ -430,10 +430,9 @@ class DataController {
       // if not admin and not this user send a error
       if (
         !req?.user?.data.roles.includes('admin') &&
-        req?.user?.id !== work.userId
+        req?.user?.id !== work.user.userId
       ) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       res.send(new Result({ data: work, success: true }));
@@ -448,8 +447,7 @@ class DataController {
 
       // Have to be a editor to be here
       if (!req?.user?.data.roles.includes('admin')) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       const data = {
@@ -588,7 +586,7 @@ class DataController {
         !req?.user?.data.roles.includes('admin') &&
         req?.user?.data.id !== work.user.userId
       ) {
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       res.send(new Result({ data: work, success: true }));
@@ -704,8 +702,7 @@ class DataController {
 
       // If userId is a thing and its not the user who is on check for admin
       if (userId && !req?.user?.data.roles.includes('admin')) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       // If no userId then retrun the users own
@@ -740,8 +737,7 @@ class DataController {
 
       // If userId is a thing and its not the user who is on check for admin
       if (userId && !req?.user?.data.roles.includes('admin')) {
-        // TODO: SECURITY!!
-        throw new Error('Access Denied');
+        await this.accessDenied(req.ip);
       }
 
       const setQuery: any = {
@@ -767,6 +763,11 @@ class DataController {
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
+  }
+
+  public async accessDenied(ip: string) {
+    await security.checkAndBlockIP(ip);
+    throw new Error('Access Denied');
   }
 }
 
