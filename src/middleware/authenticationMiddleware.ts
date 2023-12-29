@@ -67,11 +67,10 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
           req.user.data.roles.includes(minRole)));
 
     if (!passed) {
-      security.checkAndBlockIP(req.ip).then(() => {
-        return res.status(403).json({
-          message: 'You are not allowed to access this resource.',
-          success: false
-        });
+      await security.checkAndBlockIP(req.ip);
+      return res.status(403).json({
+        message: 'You are not allowed to access this resource.',
+        success: false
       });
     }
 
@@ -80,16 +79,14 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
 };
 
 const hasRole = (role: string) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.user || !req.user.data.roles.includes(role)) {
-      security.checkAndBlockIP(req.ip).then(() => {
-        return res.status(403).json({
-          message: 'You are not allowed to access this resource.',
-          success: false
-        });
+      await security.checkAndBlockIP(req.ip);
+      return res.status(403).json({
+        message: 'You are not allowed to access this resource.',
+        success: false
       });
     }
-
     next();
   };
 };
