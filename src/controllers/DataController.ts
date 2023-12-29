@@ -14,6 +14,31 @@ class DataController {
     category: Category
   };
 
+  constructor() {
+    // Binding all methods to ensure the correct context of `this`
+    this.getCollection = this.getCollection.bind(this);
+    this.getHomePageData = this.getHomePageData.bind(this);
+    this.getCategoryPageData = this.getCategoryPageData.bind(this);
+    this.getServicePageData = this.getServicePageData.bind(this);
+    this.getMeetingPageData = this.getMeetingPageData.bind(this);
+    this.findUnavailableDurations = this.findUnavailableDurations.bind(this);
+    this.bookMeeting = this.bookMeeting.bind(this);
+    this.getWorkPageData = this.getWorkPageData.bind(this);
+    this.getWorkConfirmationPageData =
+      this.getWorkConfirmationPageData.bind(this);
+    this.confirmWork = this.confirmWork.bind(this); // Already bound in your original code
+    this.getWorkCancelPageData = this.getWorkCancelPageData.bind(this);
+    this.cancelWork = this.cancelWork.bind(this);
+    this.getViewComponent = this.getViewComponent.bind(this);
+    this.getWorkEditorPageData = this.getWorkEditorPageData.bind(this);
+    this.upsertWork = this.upsertWork.bind(this);
+    this.getWorkComponent = this.getWorkComponent.bind(this);
+    this.getUserPageData = this.getUserPageData.bind(this);
+    this.getProfile = this.getProfile.bind(this);
+    this.saveProfile = this.saveProfile.bind(this);
+    this.accessDenied = this.accessDenied.bind(this); // This was the initial method with issues
+  }
+
   // _Generics
   public async getCollection(req: any, res: any) {
     try {

@@ -1,6 +1,8 @@
 import express from 'express';
 import geoip from 'geoip-lite';
+import config from '../config';
 import { IPData } from '../models'; // Adjust the path as needed
+import EmailService from './EmailService';
 
 class SecurityService {
   public static getInstance(): SecurityService {
@@ -34,6 +36,17 @@ class SecurityService {
       (await new IPData({ ipAddress }).save());
     ipData.count++;
     if (ipData.count >= 5) {
+      if (!ipData.isBlocked) {
+        const geo = geoip.lookup(ipAddress);
+        const body = `=== IP ===<br>${ipAddress}<br>=== Geo Info ===<br>${geo}<br>=== Database Info ===<br>${JSON.stringify(
+          ipData.toJSON()
+        ).replace(/\n/g, '<br>')}`;
+        EmailService.sendAlertEmail(
+          config.sendGrid.email.alert,
+          'IP Blocked',
+          body
+        );
+      }
       ipData.isBlocked = true;
     }
     await ipData.save();
@@ -50,7 +63,9 @@ class SecurityService {
     const geo = geoip.lookup(ipAddress);
 
     return (
+      // Coffee shop and home
       ipAddress === '192.168.200.45' ||
+      ipAddress === '192.168.0.26' ||
       (geo && this.allowedCountries.has(geo.country))
     );
   }

@@ -100,6 +100,56 @@ class EmailService implements IEmailService {
     await this.sendEmail(mail);
   }
 
+  public async sendAlertEmail(
+    to: EmailData,
+    alert: string,
+    body: string
+  ): Promise<void> {
+    if (typeof to === 'string') {
+      to = { email: to };
+    }
+
+    const mail = new Mail({
+      to,
+      from: sendGridJson.email.noReply,
+      subject: sendGridJson.alert.subject,
+      templateId: sendGridJson.alert.template,
+      dynamicTemplateData: {
+        alert,
+        body,
+        company_name: config.company
+      }
+    });
+
+    await this.sendEmail(mail);
+  }
+
+  public async sendNotificationEmail(
+    to: EmailData,
+    title: string,
+    header: string,
+    body: string
+  ): Promise<void> {
+    if (typeof to === 'string') {
+      to = { email: to };
+    }
+
+    const mail = new Mail({
+      to,
+      from: sendGridJson.email.noReply,
+      subject: sendGridJson.notification.subject,
+      templateId: sendGridJson.notification.template,
+      dynamicTemplateData: {
+        title,
+        header,
+        body,
+        company_name: config.company
+      }
+    });
+
+    await this.sendEmail(mail);
+  }
+
   public errorHtml(errorMessage: string): string {
     return `
         <div style="border: 1px solid #e74c3c; padding: 16px; max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #f9ecec;">
