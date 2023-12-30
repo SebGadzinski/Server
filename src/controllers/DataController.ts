@@ -92,6 +92,10 @@ class DataController {
         }
       ]);
 
+      if (!data || data.length === 0) {
+        throw new Error(`No data for category ${req.body.categorySlug}`);
+      }
+
       res.send(new Result({ data, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
