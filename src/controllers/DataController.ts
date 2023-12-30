@@ -5,6 +5,7 @@
 import Result from '../classes/Result';
 import config from '../config';
 import { Category, Meetings, Token, User, Work } from '../models';
+import EmailService from '../services/EmailService';
 import SecurityService from '../services/SecurityService';
 
 const security = SecurityService.getInstance();
@@ -183,7 +184,7 @@ class DataController {
       const startDate = new Date(req.body.startDate);
       const users: string[] = [];
 
-      if (!req?.user?.data.id) throw new Error('Sign Up Required');
+      if (!req?.user?.data?.id) throw new Error('Sign Up Required');
       // if (!req.user.data.emailConfirmed) throw new Error('Email Confirmed Required');
 
       users.push(req.user.data.id);
@@ -244,6 +245,31 @@ class DataController {
         updatedBy: req.user.data.id
       });
       await newWork.save();
+
+      // Send Email
+      const category = await Category.aggregate([
+        { $match: { slug: req.body.categorySlug } },
+        { $unwind: '$services' },
+        { $match: { 'services.slug': req.body.serviceSlug } },
+        { $project: { 'name': 1, 'services.name': 1 } }
+      ]).exec();
+
+      await EmailService.sendNotificationEmail(
+        config.sendGrid.email.alert,
+        'New Meeting',
+        `${req?.user.data.email} Wants To Talk!`,
+        `${req?.user.data.email} wants to talk about work in ${category[0].name} - ${category[0].services.name}`,
+        `${config.frontEndDomain}/work/${newWork._id}`,
+        'View On Site'
+      );
+      await EmailService.sendNotificationEmail(
+        req?.user.data.email,
+        'New Meeting',
+        `Meeting has been set`,
+        `Your meeting is set for ${startDate.toDateString()} - ${endDate.toDateString()}`,
+        `${config.frontEndDomain}/work/${newWork._id}`,
+        'View On Site'
+      );
 
       res.send(new Result({ data: newMeeting, success: true }));
     } catch (err) {
@@ -369,11 +395,12 @@ class DataController {
       const work = await Work.findOne({ _id: req?.body?.workId });
       if (!work) throw new Error('Work not found');
 
+      const workUser = await User.findOne({ _id: work.userId });
+      if (!workUser) throw new Error('User not found');
+
       // if not admin and not this user send a error
-      if (
-        !req?.user?.data.roles.includes('admin') &&
-        req?.user?.data.id !== work.userId.toString()
-      ) {
+      const isAdmin = req?.user?.data.roles.includes('admin');
+      if (!isAdmin && req?.user?.data.id !== work.userId.toString()) {
         await this.accessDenied(req.ip);
       }
 
@@ -383,6 +410,19 @@ class DataController {
       work.initialPaymentStatus = 'Some Completed';
       work.cancellationPaymentStatus = 'Some Completed';
       work.save();
+
+      const theUser = isAdmin ? 'Admin' : workUser.fullName;
+      const emailUsers = [workUser.email, config.sendGrid.email.alert];
+      for (const email of emailUsers) {
+        await EmailService.sendNotificationEmail(
+          email,
+          'Work Confirmed',
+          `${theUser} Confirm Work`,
+          `${theUser} has confirmed the work id ${work._id}`,
+          `${config.frontEndDomain}/work/${work._id}`,
+          'View On Site'
+        );
+      }
 
       res.send(new Result({ success: true }));
     } catch (err) {
@@ -425,11 +465,12 @@ class DataController {
       const work = await Work.findOne({ _id: req?.body?.workId });
       if (!work) throw new Error('Work not found');
 
+      const workUser = await User.findOne({ _id: work.userId });
+      if (!workUser) throw new Error('User not found');
+
       // if not admin and not this user send a error
-      if (
-        !req?.user?.data.roles.includes('admin') &&
-        req?.user?.data.id !== work.userId.toString()
-      ) {
+      const isAdmin = req?.user?.data.roles.includes('admin');
+      if (!isAdmin && req?.user?.data.id !== work.userId.toString()) {
         await this.accessDenied(req.ip);
       }
 
@@ -439,6 +480,19 @@ class DataController {
       work.initialPaymentStatus = 'Completed';
       work.cancellationPaymentStatus = 'Some Completed';
       work.save();
+
+      const theUser = isAdmin ? 'Admin' : workUser.fullName;
+      const emailUsers = [workUser.email, config.sendGrid.email.alert];
+      for (const email of emailUsers) {
+        await EmailService.sendNotificationEmail(
+          email,
+          'Work Cancelled',
+          `${theUser} Cancelled Work`,
+          `${theUser} has cancelled work ${work._id}`,
+          `${config.frontEndDomain}/work/${work._id}`,
+          'View On Site'
+        );
+      }
 
       res.send(new Result({ success: true }));
     } catch (err) {
@@ -497,9 +551,16 @@ class DataController {
           'Confirmation Required',
           'User Accepted',
           'Needs Attention',
-          'N/A'
+          'N/A',
+          'Cancellation Set Up'
         ],
-        paymentStatusOptions: ['Some Completed', 'Completed', 'N/A', 'Unset'],
+        paymentStatusOptions: [
+          'Some Completed',
+          'Completed',
+          'N/A',
+          'Unset',
+          'Incomplete'
+        ],
         subscriptionIntervalOptions: ['N/A', '7 Days', '1 Months', '1 Years'],
         work: await Work.getViewComponent(req?.body.workId)
       };
@@ -523,7 +584,9 @@ class DataController {
         user,
         category,
         service,
-        payment
+        payment,
+        updateMessage,
+        sendEmail
       } = req.body;
 
       // Find the user based on the email
@@ -593,6 +656,17 @@ class DataController {
       }
 
       await work.save();
+
+      if (sendEmail) {
+        await EmailService.sendNotificationEmail(
+          user.email,
+          'Work Update',
+          'Admin Updated Work',
+          updateMessage,
+          `${config.frontEndDomain}/work/${work._id}`,
+          'View On Site'
+        );
+      }
 
       res.send(new Result({ success: true }));
     } catch (err) {

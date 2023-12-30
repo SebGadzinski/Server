@@ -23,25 +23,34 @@ const isAuthenticated = (req: any, res: any, next: express.NextFunction) => {
     });
   }
 
+  let allowPass = false;
+  // Allow meeting urls to go through as its needs it
+  if (req.path.endsWith('/meeting/book')) {
+    allowPass = true;
+  }
+
   let decoded: any = {};
   try {
     decoded = jwt.verify(token, config.secret);
   } catch (err) {
-    // console.error(err);
-    return res.status(401).json({
-      message: 'You are not allowed to access this resource.',
-      success: false
-    });
+    if (!allowPass) {
+      return res.status(401).json({
+        message: 'You are not allowed to access this resource.',
+        success: false
+      });
+    }
   }
 
-  if (!decoded || !decoded.data.email) {
-    return res.status(403).json({
-      message: 'You are not allowed to access this resource.',
-      success: false
-    });
+  if (!decoded || !decoded?.data?.email) {
+    if (!allowPass) {
+      return res.status(403).json({
+        message: 'You are not allowed to access this resource.',
+        success: false
+      });
+    }
   }
 
-  req.user = decoded;
+  if (decoded) req.user = decoded;
 
   next();
 };

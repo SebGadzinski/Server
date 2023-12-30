@@ -64,7 +64,7 @@ class SecurityService {
 
     return (
       // Coffee shop and home
-      ipAddress === '192.168.200.45' ||
+      ipAddress === '192.168.200.43' ||
       ipAddress === '192.168.0.26' ||
       (geo && this.allowedCountries.has(geo.country))
     );

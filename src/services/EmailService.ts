@@ -128,7 +128,9 @@ class EmailService implements IEmailService {
     to: EmailData,
     title: string,
     header: string,
-    body: string
+    body: string,
+    link: string,
+    btnMessage: string
   ): Promise<void> {
     if (typeof to === 'string') {
       to = { email: to };
@@ -143,7 +145,9 @@ class EmailService implements IEmailService {
         title,
         header,
         body,
-        company_name: config.company
+        company_name: config.company,
+        btn_link: link,
+        btn_message: btnMessage
       }
     });
 
