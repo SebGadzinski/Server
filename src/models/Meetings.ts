@@ -8,6 +8,7 @@ import UnivailableDates from './UnivailableDates';
 
 export interface IMeetings extends Document {
   _id: Schema.Types.ObjectId;
+  zoomMeetingId: string;
   // hostUserId: Schema.Types.ObjectId; ADVANCMENT
   categorySlug: string;
   serviceSlug: string;
@@ -38,6 +39,7 @@ interface IMeetingsModel extends Model<IMeetings> {
 const MeetingsSchema: Schema = new mongoose.Schema(
   {
     // hostUserId: { type: Schema.Types.ObjectId, ref: 'User' }, // Reference to User model
+    zoomMeetingId: { type: String, required: true },
     categorySlug: { type: String, required: true },
     serviceSlug: { type: String, required: true },
     users: { type: [Schema.Types.ObjectId], required: true },

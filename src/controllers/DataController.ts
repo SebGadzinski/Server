@@ -2,11 +2,13 @@
  * @file Controller for application needs
  * @author Sebastian Gadzinski
  */
+import { DateTime } from 'luxon';
 import Result from '../classes/Result';
 import config from '../config';
 import { Category, Meetings, Token, User, Work } from '../models';
 import EmailService from '../services/EmailService';
 import SecurityService from '../services/SecurityService';
+import ZoomMeetingService from '../services/ZoomMeetingService';
 
 const security = SecurityService.getInstance();
 
@@ -200,7 +202,7 @@ class DataController {
 
       // Check for time conflicts
       const endDate: Date = new Date(startDate.getTime());
-      endDate.setMinutes(45);
+      endDate.setMinutes(30);
       const conflictingMeetings = await Meetings.find({
         $or: [
           { startDate: { $lt: endDate, $gte: startDate } },
@@ -213,21 +215,25 @@ class DataController {
         throw new Error('Time slot is not available');
       }
 
-      // TODO: Get google meetings or zoom link
-      const link =
-        'https://ca.search.yahoo.com/search?fr=mcafee&type=E211CA885G0&p=meeting';
-
-      // Add Meeting
       const newMeeting = new Meetings({
         // Me for now
         // hostUserId,
         categorySlug,
         serviceSlug,
         users,
-        link,
         startDate,
         endDate
       });
+
+      const { join_url, meetingId } = await ZoomMeetingService.createMeeting(
+        `${req?.user.data.email}: ${categorySlug} - ${serviceSlug}`,
+        startDate,
+        30
+      );
+
+      newMeeting.link = join_url;
+      newMeeting.zoomMeetingId = meetingId;
+
       await newMeeting.save();
 
       // Create new work object and attach meeting
@@ -258,6 +264,15 @@ class DataController {
         { $project: { 'name': 1, 'services.name': 1 } }
       ]).exec();
 
+      // Convert and format dates for email using Luxon
+      const timeZone = 'America/New_York';
+      const formattedStartDate = DateTime.fromJSDate(startDate)
+        .setZone(timeZone)
+        .toFormat('MMMM dd, yyyy HH:mm:ss');
+      const formattedEndDate = DateTime.fromJSDate(endDate)
+        .setZone(timeZone)
+        .toFormat('HH:mm:ss');
+
       await EmailService.sendNotificationEmail(
         config.sendGrid.email.alert,
         'New Meeting',
@@ -270,7 +285,7 @@ class DataController {
         req?.user.data.email,
         'New Meeting',
         `Meeting has been set`,
-        `Your meeting is set for ${startDate.toDateString()} - ${endDate.toDateString()}`,
+        `Your meeting is set for ${formattedStartDate} - ${formattedEndDate} Eastern Time. Click on button below and hit the actions drop down and click 'Go To Meeting'`,
         `${config.frontEndDomain}/work/${newWork._id}`,
         'View On Site'
       );
@@ -477,6 +492,10 @@ class DataController {
       if (!isAdmin && req?.user?.data.id !== work.userId.toString()) {
         await this.accessDenied(req.ip);
       }
+
+      const meeting = await Meetings.findOne({ _id: work.meetingId });
+      await Meetings.deleteOne({ _id: work.meetingId });
+      await ZoomMeetingService.cancelMeeting(meeting.zoomMeetingId);
 
       // If some payment items got completed do this but it can be done by
       // admin anyway w editing

@@ -75,7 +75,7 @@ class SecurityService {
     this.isIPBlocked(ipAddress)
       .then((isBlocked) => {
         if (isBlocked || !this.isCountryAllowed(ipAddress)) {
-          res.status(403).send('Access denied');
+          res.status(499).send('Access denied');
         } else {
           next();
         }

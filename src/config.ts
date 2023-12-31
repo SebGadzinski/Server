@@ -7,6 +7,7 @@ import chatGPT from './configs/chatGPT.json';
 import firebaseServiceAccount from './configs/firebase.json';
 import googleServiceAPI from './configs/google-services.json';
 import sendGrid from './configs/sendGrid.json';
+import zoom from './configs/zoom.json';
 
 const config = {
   databaseUrl: env.getEnvironmentVariable('MONGO_DB'),
@@ -34,7 +35,8 @@ const config = {
   firebaseServiceAccount,
   downloadAppEndpoint: env.getEnvironmentVariable('DOWNLOAD_APP_ENDPOINT'),
   googleServiceAPI,
-  chatGPT
+  chatGPT,
+  zoom
 };
 
 export default config;
