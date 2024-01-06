@@ -79,4 +79,8 @@ router.post('/getProfile', isAuthenticated, DataController.getProfile);
 
 router.post('/saveProfile', isAuthenticated, DataController.saveProfile);
 
+router.post('/work/pay', isAuthenticated, DataController.generatePaymentIntent);
+
+router.get('/work/pay/confirm', DataController.confirmPaymentIntent);
+
 export default router;

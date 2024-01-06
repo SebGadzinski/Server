@@ -63,8 +63,10 @@ class SecurityService {
     const geo = geoip.lookup(ipAddress);
 
     return (
-      // Coffee shop and home
+      // Loopack, Centurion coffee shop, home, tim hortans
+      ipAddress === '::1' ||
       ipAddress === '192.168.200.43' ||
+      ipAddress === '192.168.0.27' ||
       ipAddress === '192.168.0.26' ||
       (geo && this.allowedCountries.has(geo.country))
     );
@@ -75,7 +77,7 @@ class SecurityService {
     this.isIPBlocked(ipAddress)
       .then((isBlocked) => {
         if (isBlocked || !this.isCountryAllowed(ipAddress)) {
-          res.status(499).send('Access denied');
+          res.status(499).send('Get blocked son');
         } else {
           next();
         }

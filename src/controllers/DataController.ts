@@ -2,13 +2,22 @@
  * @file Controller for application needs
  * @author Sebastian Gadzinski
  */
+import { randomUUID } from 'crypto';
 import { DateTime } from 'luxon';
+import mongoose from 'mongoose';
+import Stripe from 'stripe';
 import Result from '../classes/Result';
 import config from '../config';
 import { Category, Meetings, Token, User, Work } from '../models';
+import { IUser } from '../models/User';
+import { IWork } from '../models/Work';
 import EmailService from '../services/EmailService';
 import SecurityService from '../services/SecurityService';
 import ZoomMeetingService from '../services/ZoomMeetingService';
+
+const stripe = new Stripe(config.stripe.secretKey, {
+  apiVersion: '2023-10-16'
+});
 
 const security = SecurityService.getInstance();
 
@@ -40,6 +49,9 @@ class DataController {
     this.getProfile = this.getProfile.bind(this);
     this.saveProfile = this.saveProfile.bind(this);
     this.accessDenied = this.accessDenied.bind(this); // This was the initial method with issues
+    this.generatePaymentIntent = this.generatePaymentIntent.bind(this);
+    this.sendCancelWorkEmails = this.sendCancelWorkEmails.bind(this);
+    this.sendConfirmWorkEmails = this.sendConfirmWorkEmails.bind(this);
   }
 
   // _Generics
@@ -250,6 +262,7 @@ class DataController {
         cancellationPayment: 0,
         cancellationPaymentStatus: 'Unset',
         status: 'Meeting',
+        paymentHistory: [],
         createdDate: new Date(),
         createdBy: req.user.data.id,
         updatedBy: req.user.data.id
@@ -423,27 +436,204 @@ class DataController {
         await this.accessDenied(req.ip);
       }
 
-      // If some payment items got completed do this but it can be done by
-      // admin anyway w editing
       work.status = 'User Accepted';
-      work.initialPaymentStatus = 'Some Completed';
-      work.cancellationPaymentStatus = 'Some Completed';
+      work.initialPaymentStatus = 'Completed';
       work.save();
 
-      const theUser = isAdmin ? 'Admin' : workUser.fullName;
-      const emailUsers = [workUser.email, config.sendGrid.email.alert];
-      for (const email of emailUsers) {
-        await EmailService.sendNotificationEmail(
-          email,
-          'Work Confirmed',
-          `${theUser} Confirm Work`,
-          `${theUser} has confirmed the work id ${work._id}`,
-          `${config.frontEndDomain}/work/${work._id}`,
-          'View On Site'
-        );
-      }
+      await this.sendConfirmWorkEmails(isAdmin, work, workUser);
 
       res.send(new Result({ success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async sendConfirmWorkEmails(
+    isAdmin: boolean,
+    work: IWork,
+    workUser: IUser
+  ) {
+    const theUser = isAdmin ? 'Admin' : workUser.fullName;
+    const emailUsers = [workUser.email, config.sendGrid.email.alert];
+    for (const email of emailUsers) {
+      await EmailService.sendNotificationEmail(
+        email,
+        'Work Confirmed',
+        `${theUser} Confirm Work`,
+        `${theUser} has confirmed the work id ${work._id}`,
+        `${config.frontEndDomain}/work/${work._id}`,
+        'View On Site'
+      );
+    }
+  }
+
+  public async generatePaymentIntent(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.findOne({ _id: req.body.workId });
+
+      // if not admin and not this user send an error
+      if (
+        !req.user.data.roles.includes('admin') &&
+        req.user.data.id !== work.userId.toString()
+      ) {
+        await this.accessDenied(req.ip);
+        return;
+      }
+
+      let amount = 0;
+      let name = '';
+      const currency = 'usd';
+      const paymentCompletedMsg = `Payment already completed`;
+
+      if (req.body.type === 'confirmation') {
+        if (work.initialPaymentStatus === 'Completed') {
+          throw new Error(paymentCompletedMsg);
+        }
+        amount = work.initialPayment;
+        name = 'Initial Payment for Work ID ' + req.body.workId;
+      } else if (req.body.type === 'paymentItem' && req.body.paymentItemId) {
+        // Get the payment item and add it name
+        const paymentItem = work.paymentItems.find(
+          (x) => x._id.toString() === req.body.paymentItemId
+        );
+        if (!paymentItem) {
+          throw new Error(`No payment item found ${req.body.paymentItemId}`);
+        }
+        if (paymentItem.status === 'Completed') {
+          throw new Error(paymentCompletedMsg);
+        }
+        name = `Payment '${paymentItem.name}' for Work ID ${req.body.workId}`;
+        amount = paymentItem.payment;
+      } else if (req.body.type === 'full') {
+        const unpaidPaymentItems = work.paymentItems.filter(
+          (x) => x.status !== 'Completed'
+        );
+        if (unpaidPaymentItems.length === 0) {
+          throw new Error(paymentCompletedMsg);
+        }
+        amount = unpaidPaymentItems.reduce((total, currentItem) => {
+          return total + currentItem.payment;
+        }, 0);
+        name = 'Complete Payment for Work ID ' + req.body.workId;
+      } else if (req.body.type === 'cancellation') {
+        if (work.cancellationPaymentStatus === 'Completed') {
+          throw new Error(paymentCompletedMsg);
+        }
+        amount = work.cancellationPayment;
+        name = 'Cancellation Payment for Work ID ' + req.body.workId;
+      } else {
+        throw new Error('Endpoint not found');
+      }
+
+      // Create a new Payment History
+      const newPaymentHistory: any = {
+        _id: new mongoose.Types.ObjectId(),
+        type: req.body.type,
+        sessionId: '',
+        status: 'New',
+        createdDate: new Date()
+      };
+
+      if (req.body.paymentItemId) {
+        newPaymentHistory.paymentItemId = req.body.paymentItemId;
+      }
+
+      // TODO: Get Session ID Based off work Category
+
+      // Create a Stripe Checkout Session for the payment
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency,
+              product_data: {
+                name
+              },
+              unit_amount: amount
+            },
+            quantity: 1
+          }
+        ],
+        mode: 'payment',
+        success_url: `${config.domain}/api/data/work/pay/confirm?id=${newPaymentHistory._id}`,
+        cancel_url: `${config.domain}/work`
+      });
+
+      newPaymentHistory.sessionId = session.id;
+      work.paymentHistory.push(newPaymentHistory);
+      work.save();
+
+      res.send(new Result({ data: { sessionId: session.id }, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async confirmPaymentIntent(req: any, res: any) {
+    try {
+      if (!req?.query?.id) throw new Error('Payement History ID is required');
+
+      const work = await Work.findOne({
+        paymentHistory: { _id: req.query.id }
+      });
+      if (!work) {
+        throw new Error('No Work Found');
+      }
+
+      const workUser = await User.findOne({ _id: work.userId });
+      if (!workUser) throw new Error('User not found');
+
+      // Get the payment history object from the list
+      const paymentHistory = work.paymentHistory.find(
+        (ph) => ph._id.toString() === req.query.id
+      );
+      if (!paymentHistory) {
+        throw new Error('Payment History Not Found');
+      }
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        paymentHistory.sessionId
+      );
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new Error('Payment not successful');
+      }
+
+      paymentHistory.status = 'Completed';
+
+      // Update the statuses of content of work
+      if (paymentHistory.type === 'confirmation') {
+        work.status = 'User Accepted';
+        work.initialPaymentStatus = 'Completed';
+        await this.sendConfirmWorkEmails(false, work, workUser);
+      } else if (
+        paymentHistory.type === 'paymentItem' &&
+        paymentHistory?.paymentItemId
+      ) {
+        const paymentItem = work.paymentItems.find(
+          (pi) => pi._id.toString() === paymentHistory.paymentItemId
+        );
+        if (paymentItem) {
+          paymentItem.status = 'Completed';
+        }
+      } else if (paymentHistory.type === 'full') {
+        work.paymentItems.map((x) => {
+          x.status = 'Completed';
+          return x;
+        });
+      } else if (paymentHistory.type === 'cancellation') {
+        work.status = 'Cancelled';
+        work.cancellationPaymentStatus = 'Completed';
+        await this.sendCancelWorkEmails(false, work, workUser);
+      } else {
+        throw new Error(`Type ${paymentHistory.type} not found`);
+      }
+
+      await work.save();
+      res.send(new Result({ data: true, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
@@ -466,10 +656,6 @@ class DataController {
       const data = {
         work
       };
-
-      // TODO: Determine cancellation fee
-      // This should be based off of how long in the work process you are
-      // in and what work had already been done
 
       res.send(new Result({ data, success: true }));
     } catch (err) {
@@ -500,26 +686,33 @@ class DataController {
       // If some payment items got completed do this but it can be done by
       // admin anyway w editing
       work.status = 'Cancelled';
-      work.initialPaymentStatus = 'Completed';
-      work.cancellationPaymentStatus = 'Some Completed';
+      work.cancellationPaymentStatus = 'Completed';
       work.save();
 
-      const theUser = isAdmin ? 'Admin' : workUser.fullName;
-      const emailUsers = [workUser.email, config.sendGrid.email.alert];
-      for (const email of emailUsers) {
-        await EmailService.sendNotificationEmail(
-          email,
-          'Work Cancelled',
-          `${theUser} Cancelled Work`,
-          `${theUser} has cancelled work ${work._id}`,
-          `${config.frontEndDomain}/work/${work._id}`,
-          'View On Site'
-        );
-      }
+      await this.sendCancelWorkEmails(isAdmin, work, workUser);
 
       res.send(new Result({ success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async sendCancelWorkEmails(
+    isAdmin: boolean,
+    work: IWork,
+    workUser: IUser
+  ) {
+    const theUser = isAdmin ? 'Admin' : workUser.fullName;
+    const emailUsers = [workUser.email, config.sendGrid.email.alert];
+    for (const email of emailUsers) {
+      await EmailService.sendNotificationEmail(
+        email,
+        'Work Cancelled',
+        `${theUser} Cancelled Work`,
+        `${theUser} has cancelled work ${work._id}`,
+        `${config.frontEndDomain}/work/${work._id}`,
+        'View On Site'
+      );
     }
   }
 

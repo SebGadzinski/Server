@@ -36,6 +36,16 @@ export interface IWork extends Document {
   cancellationPayment: number;
   cancellationPaymentStatus: string;
   status: string;
+  paymentHistory: [
+    {
+      _id: Schema.Types.ObjectId;
+      type: string;
+      sessionId: string;
+      paymentItemId: string;
+      status: string;
+      createdDate: Date;
+    }
+  ];
   createdBy: string;
   updatedBy: string;
 }
@@ -83,6 +93,15 @@ const WorkSchema: Schema = new mongoose.Schema(
     cancellationPayment: { type: Number, required: true },
     cancellationPaymentStatus: { type: String, required: true },
     status: { type: String, required: true },
+    paymentHistory: [
+      {
+        type: { type: String, required: true },
+        sessionId: { type: String, required: true },
+        paymentItemId: { type: String, required: false },
+        status: { type: String, required: true },
+        createdDate: { type: Date, required: true }
+      }
+    ],
     createdBy: { type: String, required: true },
     updatedBy: { type: String, required: true }
   },

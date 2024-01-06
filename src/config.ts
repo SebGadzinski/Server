@@ -7,6 +7,7 @@ import chatGPT from './configs/chatGPT.json';
 import firebaseServiceAccount from './configs/firebase.json';
 import googleServiceAPI from './configs/google-services.json';
 import sendGrid from './configs/sendGrid.json';
+import stripe from './configs/stripe.json';
 import zoom from './configs/zoom.json';
 
 const config = {
@@ -36,7 +37,8 @@ const config = {
   downloadAppEndpoint: env.getEnvironmentVariable('DOWNLOAD_APP_ENDPOINT'),
   googleServiceAPI,
   chatGPT,
-  zoom
+  zoom,
+  stripe
 };
 
 export default config;
