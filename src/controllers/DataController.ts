@@ -15,9 +15,17 @@ import EmailService from '../services/EmailService';
 import SecurityService from '../services/SecurityService';
 import ZoomMeetingService from '../services/ZoomMeetingService';
 
-const stripe = new Stripe(config.stripe.secretKey, {
-  apiVersion: '2023-10-16'
-});
+const stripe = {
+  software: new Stripe(config.stripe.software, {
+    apiVersion: '2023-10-16'
+  }),
+  photography: new Stripe(config.stripe.photography, {
+    apiVersion: '2023-10-16'
+  }),
+  videography: new Stripe(config.stripe.videography, {
+    apiVersion: '2023-10-16'
+  })
+};
 
 const security = SecurityService.getInstance();
 
@@ -27,6 +35,8 @@ class DataController {
   };
 
   constructor() {
+    this.sendCancelWorkEmails = this.sendCancelWorkEmails.bind(this);
+    this.sendConfirmWorkEmails = this.sendConfirmWorkEmails.bind(this);
     // Binding all methods to ensure the correct context of `this`
     this.getCollection = this.getCollection.bind(this);
     this.getHomePageData = this.getHomePageData.bind(this);
@@ -50,8 +60,7 @@ class DataController {
     this.saveProfile = this.saveProfile.bind(this);
     this.accessDenied = this.accessDenied.bind(this); // This was the initial method with issues
     this.generatePaymentIntent = this.generatePaymentIntent.bind(this);
-    this.sendCancelWorkEmails = this.sendCancelWorkEmails.bind(this);
-    this.sendConfirmWorkEmails = this.sendConfirmWorkEmails.bind(this);
+    this.confirmPaymentIntent = this.confirmPaymentIntent.bind(this);
   }
 
   // _Generics
@@ -436,6 +445,9 @@ class DataController {
         await this.accessDenied(req.ip);
       }
 
+      // You cannot confirm work this way if there is a initial payment
+      if (work.initialPayment > 0) throw new Error('Payment must be made');
+
       work.status = 'User Accepted';
       work.initialPaymentStatus = 'Completed';
       work.save();
@@ -543,7 +555,7 @@ class DataController {
       // TODO: Get Session ID Based off work Category
 
       // Create a Stripe Checkout Session for the payment
-      const session = await stripe.checkout.sessions.create({
+      const session = await stripe[work.categorySlug].checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
@@ -552,14 +564,14 @@ class DataController {
               product_data: {
                 name
               },
-              unit_amount: amount
+              unit_amount: amount * 100
             },
             quantity: 1
           }
         ],
         mode: 'payment',
-        success_url: `${config.domain}/api/data/work/pay/confirm?id=${newPaymentHistory._id}`,
-        cancel_url: `${config.domain}/work`
+        success_url: `${config.frontEndDomain}/work/pay/confirm/${newPaymentHistory._id}`,
+        cancel_url: `${config.frontEndDomain}/work`
       });
 
       newPaymentHistory.sessionId = session.id;
@@ -576,9 +588,22 @@ class DataController {
     try {
       if (!req?.query?.id) throw new Error('Payement History ID is required');
 
-      const work = await Work.findOne({
-        paymentHistory: { _id: req.query.id }
-      });
+      const matchQuery: any = {
+        $expr: {
+          $in: [
+            { $toObjectId: req.query.id },
+            {
+              $map: {
+                input: '$paymentHistory',
+                as: 'payment',
+                in: '$$payment._id'
+              }
+            }
+          ]
+        }
+      };
+
+      const work = await Work.findOne(matchQuery);
       if (!work) {
         throw new Error('No Work Found');
       }
@@ -594,11 +619,11 @@ class DataController {
         throw new Error('Payment History Not Found');
       }
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(
-        paymentHistory.sessionId
-      );
+      const checkoutSession = await stripe[
+        work.categorySlug
+      ].checkout.sessions.retrieve(paymentHistory.sessionId);
 
-      if (paymentIntent.status !== 'succeeded') {
+      if (checkoutSession.payment_status !== 'paid') {
         throw new Error('Payment not successful');
       }
 
@@ -633,7 +658,7 @@ class DataController {
       }
 
       await work.save();
-      res.send(new Result({ data: true, success: true }));
+      res.send(new Result({ data: work._id, success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
     }
@@ -678,6 +703,9 @@ class DataController {
       if (!isAdmin && req?.user?.data.id !== work.userId.toString()) {
         await this.accessDenied(req.ip);
       }
+
+      // You cannot confirm work this way if there is a initial payment
+      if (work.cancellationPayment > 0) throw new Error('Payment must be made');
 
       const meeting = await Meetings.findOne({ _id: work.meetingId });
       await Meetings.deleteOne({ _id: work.meetingId });
@@ -855,6 +883,7 @@ class DataController {
       work.categorySlug = myCategory.slug;
       work.serviceSlug = myServiceSlug;
       work.initialPayment = payment.initialPayment;
+      work.cancellationPayment = payment.cancellationPayment;
 
       const subIndex: number = work.subscription.length - 1;
       if (payment.subscription.interval === 'N/A') {

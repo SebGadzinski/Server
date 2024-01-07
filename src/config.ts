@@ -7,8 +7,13 @@ import chatGPT from './configs/chatGPT.json';
 import firebaseServiceAccount from './configs/firebase.json';
 import googleServiceAPI from './configs/google-services.json';
 import sendGrid from './configs/sendGrid.json';
-import stripe from './configs/stripe.json';
 import zoom from './configs/zoom.json';
+
+const stripe = {
+  software: env.getEnvironmentVariable('STRIPE_SK_SOFTWARE'),
+  photography: env.getEnvironmentVariable('STRIPE_SK_PHOTOGRAPHY'),
+  videography: env.getEnvironmentVariable('STRIPE_SK_VIDEOGRAPHY')
+};
 
 const config = {
   databaseUrl: env.getEnvironmentVariable('MONGO_DB'),
