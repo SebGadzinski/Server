@@ -67,7 +67,7 @@ class SecurityService {
       ipAddress === '::1' ||
       ipAddress === '192.168.200.43' ||
       ipAddress === '192.168.0.27' ||
-      ipAddress === '192.168.0.26' ||
+      ipAddress === '192.168.101.116' ||
       (geo && this.allowedCountries.has(geo.country))
     );
   }

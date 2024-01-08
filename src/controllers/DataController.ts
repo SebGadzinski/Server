@@ -496,7 +496,7 @@ class DataController {
 
       let amount = 0;
       let name = '';
-      const currency = 'usd';
+      const currency = 'cad';
       const paymentCompletedMsg = `Payment already completed`;
 
       if (req.body.type === 'confirmation') {
