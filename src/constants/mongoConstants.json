@@ -1,0 +1,55 @@
+{
+  "WORK_STATUS_OPTIONS": {
+    "MEETING": "Meeting",
+    "COMPLETED": "Completed",
+    "CONFIRMATION_REQUIRED": "Confirmation Required",
+    "USER_ACCEPTED": "User Accepted",
+    "SUBSCRIBED": "Subscribed",
+    "NEEDS_ATTENTION": "Needs Attention",
+    "INCOMPLETE": "Incomplete",
+    "NA": "N/A",
+    "CANCELLATION_SET_UP": "Cancellation Set Up",
+    "CANCELLED": "Cancelled",
+    "PAYMENTS_FAILED": "Payments Failed",
+    "IN_USE": "In Use"
+  },
+  "PAYMENT_STATUS_OPTIONS": {
+    "SOME_COMPLETED": "Some Completed",
+    "COMPLETED": "Completed",
+    "NA": "N/A",
+    "UNSET": "Unset",
+    "INCOMPLETE": "Incomplete",
+    "FAILED": "Failed",
+    "NEW": "New"
+  },
+  "SUBSCRIPTION_INTERVAL_OPTIONS": {
+    "NA": "N/A",
+    "SEVEN_DAYS": "7 Days",
+    "ONE_MONTH": "1 Months",
+    "ONE_YEAR": "1 Years"
+  },
+  "PAYMENT_HISTORY_TYPE": {
+    "CONFIRMATION": "confirmation",
+    "PAYMENT_ITEM": "paymentItem",
+    "FULL": "full",
+    "CANCELLATION": "cancellation"
+  },
+  "LOADING_MORE": {
+    "PAYMENT_HISTORY": 5
+  },
+  "SEVERITY": {
+    "CRITICAL": "critical",
+    "WARNING": "warning",
+    "NOTICE": "notice"
+  },
+  "CLASS_OPEN_BEFORE_MIN": 30,
+  "CLASS_TYPE": {
+    "SINGLE_SESSION": "Single Session",
+    "PERPETUAL": "Perpetual",
+    "TIME_FRAME": "Time Frame",
+    "NA": "N/A"
+  },
+  "TEMPLATE_TYPE": {
+    "CLASS_OPEN": "Class Open"
+  }
+}

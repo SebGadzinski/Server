@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "target": "es6",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "baseUrl": ".",
+        "paths": {
+            "*": [
+                "node_modules/*",
+                "src/types/*"
+            ]
+        },
+        "lib": [
+            "es2015"
+        ],
+        "typeRoots": [
+            "./express",
+            "./node_modules/@types"
+        ],
+        "types": ["express", "mocha"],
+        "resolveJsonModule": true
+    },
+    "lintOptions":{
+
+    },
+    "include": [
+        "src/**/*"
+, "ecosystem.config.js"    ],
+"files":["express.d.ts"]
+}
