@@ -23,7 +23,7 @@ You need to have mongo db installed on your server. If you are running this on l
    - Below are all possible env variables
 5. npm install
 
-### Configs
+#### Configs
 
 6. Make sure you have your configuration set up.
 
@@ -45,7 +45,7 @@ All files must be in /src/config
 
 Edit the StripeService file to attach to your stripe account.
 
-## Env Variables
+#### Env Variables
 
 | Name                      | Meaning                               | Required   |
 | ------------------------- | ------------------------------------- | ---------- |
@@ -69,13 +69,13 @@ Edit the StripeService file to attach to your stripe account.
 | ACCEPTING_WORK            | Accepting new work requests           | No         |
 | SEND_EMAIL_STATUS         | Accepting new work requests           | No         |
 
-## Run
+#### Run
 
 7. npm database-seeder:dev
    - T
 8. npm run server:dev | prod | staging
 
-## pm2
+#### pm2
 
 If you want to run this via pm2 ensure to install pm2 globally.
 
