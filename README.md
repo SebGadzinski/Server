@@ -10,6 +10,12 @@ Server for Gadzy Work. This application hooks up to the /Client Repo.
 
 ## Before Running
 
+### Mongo DB
+
+You need to have mongo db installed on your server. If you are running this on linux you will need to update the .env.dev MONGO_DB env to go to port 27017 instead of 27019.
+
+### Server
+
 1. Navigate to a folder that you would like the server inside.
 2. [git clone](https://github.com/SebGadzinski/Server.git)
 3. cd Server
@@ -59,14 +65,22 @@ Edit the StripeService file to attach to your stripe account.
 | STRIPE_SK_CATEGORY        | Stripe secret key for your category   | Yes        |
 | SEND_EMAIL_STATUS         | Status of email sending feature       | No         |
 | SSL_KEY_PATH              | Path to SSL key                       | Production |
-| SSL_CERT_PATH             | Path to SSL certificate               | Yes        |
+| SSL_CERT_PATH             | Path to SSL certificate               | Production |
 | ACCEPTING_WORK            | Accepting new work requests           | No         |
 | SEND_EMAIL_STATUS         | Accepting new work requests           | No         |
 
 ## Run
 
 7. npm database-seeder:dev
+   - T
 8. npm run server:dev | prod | staging
+
+## pm2
+
+If you want to run this via pm2 ensure to install pm2 globally.
+
+1. npm i pm2 -g
+2. pm2 start ecosystem.config.js --env development | staging | production
 
 ## Help
 
