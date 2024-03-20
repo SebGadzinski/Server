@@ -26,7 +26,7 @@ All files must be in /src/config
 - ./firebase.json
 - ./sendGrid.json
 - ./zoom.json
-- View the readme inside the folder to view how they are to look.
+- View the readme inside /src/configs to view how they are to look.
 
 /db
 
@@ -35,7 +35,7 @@ All files must be in /src/config
 - ./user.json
 - ./workers.json
 
-<small>For more information on configuring your server or if you have any questions regarding the setup, please feel free to contact the developer team. We're here to help you get started smoothly. For a cost of course...</small>
+##### For more information on configuring your server or if you have any questions regarding the setup, please feel free to contact the developer team. We're here to help you get started smoothly. For a cost of course...
 
 Edit the StripeService file to attach to your stripe account.
 
