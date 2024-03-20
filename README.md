@@ -72,7 +72,7 @@ Edit the StripeService file to attach to your stripe account.
 #### Run
 
 7. npm database-seeder:dev
-   - T
+   - This will seed the database based off what you have in /src/configs/db
 8. npm run server:dev | prod | staging
 
 #### pm2
