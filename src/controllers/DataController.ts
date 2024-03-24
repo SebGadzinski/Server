@@ -412,7 +412,7 @@ class DataController {
           createdBy: req.user.data.email,
           updatedBy: req.user.data.email
         });
-        if (workTemplate.subscription) {
+        if (workTemplate.subscription && workTemplate.subscription.payment > 0) {
           newWork.subscription = [{
             payment: workTemplate.subscription.payment,
             interval: workTemplate.subscription.interval,
