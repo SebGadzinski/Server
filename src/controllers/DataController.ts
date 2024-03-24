@@ -276,7 +276,23 @@ class DataController {
 
   public async bookMeeting(req, res) {
     try {
-      const { categorySlug, serviceSlug } = req.body;
+      const { categorySlug, serviceSlug, templateId } = req.body;
+
+      let workTemplate;
+      if (templateId) {
+        workTemplate = await WorkTemplate.findById(templateId).lean();
+        workTemplate.workItems = workTemplate.workItems.map((x) => {
+          delete x._id;
+          return x;
+        });
+        workTemplate.paymentItems = workTemplate.paymentItems.map((x) => {
+          delete x._id;
+          return x;
+        });
+        if (!workTemplate) {
+          throw new Error(`Cannot find template with id: ${templateId}`);
+        }
+      }
 
       // TODO: Implement route stat counter here based off category/service
 
@@ -375,25 +391,57 @@ class DataController {
 
       await newMeeting.save();
 
-      // Create new work object and attach meeting
-      const newWork = new Work({
-        userId: req.user.data.id,
-        meetingId: newMeeting._id,
-        categorySlug,
-        serviceSlug,
-        workItems: [],
-        paymentItems: [],
-        subscription: [],
-        initialPayment: 0,
-        initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
-        cancellationPayment: 0,
-        cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
-        status: c.WORK_STATUS_OPTIONS.MEETING,
-        paymentHistory: [],
-        createdDate: new Date(),
-        createdBy: req.user.data.id,
-        updatedBy: req.user.data.id
-      });
+      let newWork;
+      if (workTemplate) {
+        newWork = new Work({
+          userId: req.user.data.id,
+          meetingId: newMeeting._id,
+          categorySlug,
+          serviceSlug,
+          workItems: workTemplate.workItems,
+          paymentItems: workTemplate.paymentItems,
+          subscription: [],
+          initialPayment: workTemplate.initialPayment,
+          initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+          cancellationPayment: workTemplate.cancellationPayment,
+          cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+          status: c.WORK_STATUS_OPTIONS.MEETING,
+          paymentHistory: [],
+          createdDate: new Date(),
+          createdBy: req.user.data.email,
+          updatedBy: req.user.data.email
+        });
+        if (workTemplate.subscription) {
+          newWork.subscription = [{
+            payment: workTemplate.subscription.payment,
+            interval: workTemplate.subscription.interval,
+            paymentHistory: [],
+            nextPayment: new Date(),
+            createdDate: new Date(),
+            dateActivated: new Date(),
+            dateDisabled: new Date(),
+          }];
+        }
+      } else {
+        newWork = new Work({
+          userId: req.user.data.id,
+          meetingId: newMeeting._id,
+          categorySlug,
+          serviceSlug,
+          workItems: [],
+          paymentItems: [],
+          subscription: [],
+          initialPayment: 0,
+          initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+          cancellationPayment: 0,
+          cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+          status: c.WORK_STATUS_OPTIONS.MEETING,
+          paymentHistory: [],
+          createdDate: new Date(),
+          createdBy: req.user.data.email,
+          updatedBy: req.user.data.email
+        });
+      }
       await newWork.save();
 
       const user = await User.findById(req.user.data.id).lean();
