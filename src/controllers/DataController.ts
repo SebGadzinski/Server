@@ -777,7 +777,8 @@ class DataController {
 
       if (work?.subscription?.length > 0) {
         const sub = work.subscription[work.subscription.length - 1];
-        if (!sub.paymentMethodId) {
+        if ((!sub.dateDisabled || sub.dateDisabled < sub.dateActivated)
+          && !sub.paymentMethodId) {
           throw new Error('Please provide a payment method');
         }
       }
