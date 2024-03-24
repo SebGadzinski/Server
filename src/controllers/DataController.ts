@@ -715,7 +715,7 @@ class DataController {
           id: workUser._id.toString(),
           notification: new Notification(
             'Work Confirmed',
-            `${theUser} Confirm Work`,
+            `${theUser} Confirmed Work`,
             {
               dotdotdot: {
                 progress: false,
@@ -738,7 +738,7 @@ class DataController {
         {
           to: email,
           title: 'Work Confirmed',
-          header: `${theUser} Confirm Work`,
+          header: `${theUser} Confirmed Work`,
           body: `${theUser} has confirmed the work id ${work._id}`,
           link: `${config.frontEndDomain}/work/${work._id}`,
           btnMessage: 'View On Site',
