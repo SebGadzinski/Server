@@ -407,6 +407,7 @@ class DataController {
           cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
           status: c.WORK_STATUS_OPTIONS.MEETING,
           paymentHistory: [],
+          classType: workTemplate.classType,
           createdDate: new Date(),
           createdBy: req.user.data.email,
           updatedBy: req.user.data.email
