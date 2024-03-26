@@ -31,6 +31,7 @@ class ClassMaintence extends CronProcess {
         const classes = await Category.findOne({ slug: 'classes' }).select('services').lean();
         for (const service of classes.services) {
             let stopSearching = false;
+
             for (const meetingTimeDate of service?.meetingTimes) {
                 if (stopSearching) break;
                 const classToUpdate = await Classes.findOne({
@@ -187,4 +188,4 @@ class ClassMaintence extends CronProcess {
 }
 
 const classMaintence = new ClassMaintence();
-classMaintence.run();
+classMaintence.test();

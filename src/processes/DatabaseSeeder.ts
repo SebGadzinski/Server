@@ -35,12 +35,14 @@ class DatabaseSeeder extends Process {
       duration: 60,
       comeIn: false,
       meetingTimes: [
+        // Tuesday 6
         DateTime.utc().set({
-          year: 2023, month: 3, day: 2,
-          hour: 22, minute: 0, second: 0, millisecond: 0
+          year: 2023, month: 2, day: 28,
+          hour: 23, minute: 0, second: 0, millisecond: 0
         }).toJSDate(),
       ]
     },
+    // Killed until I see victor again
     'language-russian': {
       instructorIds: [],
       occupancyCap: 50,
@@ -63,21 +65,23 @@ class DatabaseSeeder extends Process {
       duration: 30,
       comeIn: false,
       meetingTimes: [
+        // Tuesday 7pm
         DateTime.utc().set({
-          year: 2023, month: 3, day: 2,
-          hour: 21, minute: 0, second: 0, millisecond: 0
+          year: 2023, month: 3, day: 1,
+          hour: 0, minute: 0, second: 0, millisecond: 0
         }).toJSDate(),
       ]
     },
     'make-web-app': {
       instructorIds: [],
       occupancyCap: 50,
-      duration: 30,
+      duration: 60,
       comeIn: false,
       meetingTimes: [
+        // Tuesday 8pm
         DateTime.utc().set({
-          year: 2023, month: 3, day: 2,
-          hour: 21, minute: 0, second: 0, millisecond: 0
+          year: 2023, month: 3, day: 1,
+          hour: 1, minute: 0, second: 0, millisecond: 0
         }).toJSDate(),
       ]
     },
@@ -87,17 +91,10 @@ class DatabaseSeeder extends Process {
       duration: 30,
       comeIn: false,
       meetingTimes: [
+        // Saturdays 1pm
         DateTime.utc().set({
-          year: 2023, month: 2, day: 27,
-          hour: 19, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
-        DateTime.utc().set({
-          year: 2023, month: 3, day: 1,
-          hour: 19, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
-        DateTime.utc().set({
-          year: 2023, month: 3, day: 3,
-          hour: 19, minute: 0, second: 0, millisecond: 0
+          year: 2023, month: 3, day: 4,
+          hour: 18, minute: 0, second: 0, millisecond: 0
         }).toJSDate(),
       ],
     },
@@ -106,12 +103,8 @@ class DatabaseSeeder extends Process {
       occupancyCap: 50,
       duration: 30,
       comeIn: false,
-      meetingTimes: [
-        DateTime.utc().set({
-          year: 2023, month: 3, day: 3,
-          hour: 20, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
-      ]
+      // Custom meeting times for each user
+      meetingTimes: []
     },
     'get-schooled-son': {
       instructorIds: [],
@@ -119,17 +112,10 @@ class DatabaseSeeder extends Process {
       duration: 30,
       comeIn: false,
       meetingTimes: [
-        DateTime.utc().set({
-          year: 2023, month: 2, day: 27,
-          hour: 21, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
+        // Tuesday 10pm
         DateTime.utc().set({
           year: 2023, month: 3, day: 1,
-          hour: 21, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
-        DateTime.utc().set({
-          year: 2023, month: 3, day: 3,
-          hour: 21, minute: 0, second: 0, millisecond: 0
+          hour: 3, minute: 0, second: 0, millisecond: 0
         }).toJSDate(),
       ]
     }
@@ -413,44 +399,22 @@ class DatabaseSeeder extends Process {
         {
           start: DateTime.utc().set({
             year: 2023, month: 2, day: 27,
-            hour: 23, minute: 0, second: 0, millisecond: 0
+            hour: 18, minute: 0, second: 0, millisecond: 0
           }).toJSDate(),
           end: DateTime.utc().set({
-            year: 2023, month: 2, day: 28,
-            hour: 4, minute: 0, second: 0, millisecond: 0
+            year: 2023, month: 2, day: 27,
+            hour: 22, minute: 0, second: 0, millisecond: 0
           }).toJSDate(),
         },
-        // Tuesday
-        {
-          start: DateTime.utc().set({
-            year: 2023, month: 2, day: 28,
-            hour: 23, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-          end: DateTime.utc().set({
-            year: 2023, month: 3, day: 1,
-            hour: 4, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-        },
-        // Wednsday
+        // Wed
         {
           start: DateTime.utc().set({
             year: 2023, month: 3, day: 1,
-            hour: 23, minute: 0, second: 0, millisecond: 0
+            hour: 18, minute: 0, second: 0, millisecond: 0
           }).toJSDate(),
           end: DateTime.utc().set({
-            year: 2023, month: 3, day: 2,
-            hour: 4, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-        },
-        // Thursday
-        {
-          start: DateTime.utc().set({
-            year: 2023, month: 3, day: 2,
-            hour: 23, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-          end: DateTime.utc().set({
-            year: 2023, month: 3, day: 3,
-            hour: 4, minute: 0, second: 0, millisecond: 0
+            year: 2023, month: 3, day: 1,
+            hour: 22, minute: 0, second: 0, millisecond: 0
           }).toJSDate(),
         },
         // Friday
@@ -460,30 +424,8 @@ class DatabaseSeeder extends Process {
             hour: 18, minute: 0, second: 0, millisecond: 0
           }).toJSDate(),
           end: DateTime.utc().set({
-            year: 2023, month: 3, day: 4,
-            hour: 4, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-        },
-        // Saturday
-        {
-          start: DateTime.utc().set({
-            year: 2023, month: 3, day: 4,
-            hour: 18, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-          end: DateTime.utc().set({
-            year: 2023, month: 3, day: 5,
-            hour: 2, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-        },
-        // Sunday
-        {
-          start: DateTime.utc().set({
-            year: 2023, month: 3, day: 5,
-            hour: 18, minute: 0, second: 0, millisecond: 0
-          }).toJSDate(),
-          end: DateTime.utc().set({
-            year: 2023, month: 3, day: 6,
-            hour: 2, minute: 0, second: 0, millisecond: 0
+            year: 2023, month: 3, day: 3,
+            hour: 22, minute: 0, second: 0, millisecond: 0
           }).toJSDate(),
         },
       ];
