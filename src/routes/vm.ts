@@ -19,8 +19,4 @@ router.post('/reseedDB', isAuthenticated,
     hasRole('admin'),
     VMController.reseedDB);
 
-router.post('/gitPullClient', isAuthenticated,
-    hasRole('admin'),
-    VMController.updateClient);
-
 export default router;
