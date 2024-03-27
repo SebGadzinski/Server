@@ -15,7 +15,7 @@ console.log(projectDir);
 
 try {
     // Pull latest changes from Git
-    execSync('/usr/bin/git pull', { cwd: projectDir });
+    execSync('/usr/bin/git pull', { cwd: projectDir, stdio: 'inherit', shell: true });
     console.log('Git pull completed.');
 
     // Build the project
