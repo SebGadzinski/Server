@@ -1,3 +1,5 @@
+[![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg)](https://www.digitalocean.com/?refcode=3619b84d2ed0&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
+
 # Gadzy Work Server
 
 Server for Gadzy Work. This application hooks up to the /Client Repo.
