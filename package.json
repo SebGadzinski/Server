@@ -1,7 +1,7 @@
 {
-  "name": "node-identity-server",
+  "name": "gadzy-work",
   "version": "1.0.0",
-  "description": "Simple identity server implemented in NodeJS.",
+  "description": "Gadzy Work.",
   "main": "index.js",
   "scripts": {
     "pm2:server:dev": "node -r dotenv/config -r ts-node/register src/processes/Server.ts dotenv_config_path=./.env.dev",

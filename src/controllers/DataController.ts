@@ -1,5 +1,5 @@
 /**
- * @file Controller for application needs
+ * @file Controller for Application Data needs
  * @author Sebastian Gadzinski
  */
 import _ from 'lodash';

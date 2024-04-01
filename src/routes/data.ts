@@ -13,8 +13,6 @@ import {
 
 const router = express.Router({});
 
-router.get('/col', isAuthenticated, DataController.getCollection);
-
 router.get('/getHomePageData', DataController.getHomePageData);
 
 router.post('/getCategoryPageData', DataController.getCategoryPageData);

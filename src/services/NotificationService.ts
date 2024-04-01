@@ -58,6 +58,7 @@ class NotificationService {
       if (!tokenDoc) {
         throw new Error(`Token not found for reference id ${referenceId}`);
       } else if (tokenDoc.expiration < new Date()) {
+        await tokenDoc.deleteOne();
         throw new Error(`Token expired on ${tokenDoc.expiration}`);
       }
 
