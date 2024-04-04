@@ -114,6 +114,14 @@ class DatabaseSeeder extends Process {
       // Custom meeting times for each user
       meetingTimes: []
     },
+    'krystina-and-harrys-story-time': {
+      instructorIds: [],
+      occupancyCap: 50,
+      duration: 30,
+      comeIn: false,
+      // Custom meeting times for each user
+      meetingTimes: []
+    },
     'get-schooled-son': {
       instructorIds: [],
       occupancyCap: 50,
