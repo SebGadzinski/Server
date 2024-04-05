@@ -13,7 +13,7 @@ if(os.platform().includes("win")){
 else{
     npm = "npm";
     env = 'prod';
-    ignore_watch.all = ["/home/seb/GadzyWorks/Server/src/configs/db"];
+    ignore_watch.all = ["/home/www-node/GadzyWorks/Server/src/configs/db"];
 }
 
 const processes = [
