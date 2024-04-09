@@ -180,4 +180,6 @@ router.get(
   DataController.generatePaymentReceipt
 );
 
+// router.get('/getClassesPageData', isAuthenticated, DataController.getClassesPageData);
+
 export default router;

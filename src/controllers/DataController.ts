@@ -186,7 +186,8 @@ class DataController {
       // Extract the matched service
       const service: any = category.services[0];
       // Get templates
-      const workTemplates = await WorkTemplate.find({ category: category.name, service: service.name },
+      const workTemplates = await WorkTemplate.find(
+        { category: category.name, service: service.name },
         { name: 1, _id: 1 }).lean();
       const workTemplatesToAttach = workTemplates.reduce((acc, template) => {
         // for each of the templates possible, add there info into
@@ -503,6 +504,40 @@ class DataController {
       );
 
       res.send(new Result({ data: newMeeting, success: true }));
+    } catch (err) {
+      console.log(err);
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getClassesPageData(req: any, res: any) {
+    try {
+      const query: any = {};
+      const isAdmin = req?.user?.data.roles.includes('admin');
+
+      if (!isAdmin) {
+        query.userId = req.user.data.id;
+      }
+
+      const classes = [];
+      const categorySlug = `classes`;
+      const serviceSlug = `krystyna-and-harrys-story-time`;
+      const firstSlide = `embark-on-a-literary-adventure.png`;
+
+      // Test Data
+      classes.push({
+        name: `Krystina & Harrys Story Time`,
+        instructors: [{
+          name: `sebastiangadzinskiwork@gmail.com`,
+          img: `https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/hot-card.png`
+        }],
+        thumbnailImg: `https://gadzy-work.com/images/${categorySlug}/${serviceSlug}/desktop/${firstSlide}`,
+        joinUrl: 'https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/hot-card.png',
+        nextClass: new Date()
+      });
+
+      res.send(new Result({ data: { classes }, success: true }));
+
     } catch (err) {
       console.log(err);
       res.send(new Result({ message: err.message, success: false }));
