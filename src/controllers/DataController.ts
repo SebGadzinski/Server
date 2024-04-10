@@ -519,28 +519,175 @@ class DataController {
         query.userId = req.user.data.id;
       }
 
-      const classes = [];
-      const categorySlug = `classes`;
-      const serviceSlug = `krystyna-and-harrys-story-time`;
-      const firstSlide = `embark-on-a-literary-adventure.png`;
+      // const classes = [];
 
-      // Test Data
-      classes.push({
-        name: `Krystina & Harrys Story Time`,
-        instructors: [{
-          name: `sebastiangadzinskiwork@gmail.com`,
-          img: `https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/hot-card.png`
-        }],
-        thumbnailImg: `https://gadzy-work.com/images/${categorySlug}/${serviceSlug}/desktop/${firstSlide}`,
-        joinUrl: 'https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/hot-card.png',
-        nextClass: new Date()
-      });
+      const classes = await Work.aggregate([
+        {
+          $match: {
+            $expr: {
+              $eq: ['$userId', { $toObjectId: query.userId }]
+            },
+            status: {
+              $in: [
+                c.WORK_STATUS_OPTIONS.SUBSCRIBED,
+                c.WORK_STATUS_OPTIONS.USER_ACCEPTED
+              ]
+            }
+          },
+        },
+        {
+          $lookup: {
+            from: 'classes',
+            localField: 'serviceSlug',
+            foreignField: 'serviceSlug',
+            as: 'classDetails'
+          }
+        },
+        { $unwind: '$classDetails' },
+        {
+          $lookup: {
+            from: 'workers',
+            localField: 'classDetails.instructorIds',
+            foreignField: '_id',
+            as: 'instructorDetails'
+          }
+        },
+        { $unwind: '$instructorDetails' },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'instructorDetails.userId',
+            foreignField: '_id',
+            as: 'userDetails'
+          }
+        },
+        { $unwind: '$userDetails' },
+        {
+          $group: {
+            _id: '$_id',
+            classDetails: { $first: '$classDetails' },
+            categorySlug: { $first: '$categorySlug' },
+            serviceSlug: { $first: '$serviceSlug' },
+            classType: { $first: '$classType' },
+            canJoin: { $first: '$canJoin' },
+            instructorInfo: {
+              $push: {
+                email: `$userDetails.email`,
+                fullName: `$userDetails.fullName` // Directly using the fullName field
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            workId: '$_id',
+            duration: '$classDetails.duration',
+            serviceSlug: 1,
+            classType: 1,
+            canJoin: '$classDetails.canJoin',
+            instructorInfo: 1
+          }
+        }
+      ]).exec();
+
+      if (classes) {
+        const setOfServiceSlugs = new Set();
+        for (const aClass of classes) {
+          setOfServiceSlugs.add(aClass.serviceSlug);
+        }
+
+        // Apply thumbnails to classes
+        const categoryThumbnails: any = await Category.aggregate([
+          {
+            $match: {
+              'slug': `classes`,
+              'services.slug': { $in: [...setOfServiceSlugs] }
+            }
+          },
+          {
+            $unwind: `$services`
+          },
+          {
+            $match: {
+              'services.slug': { $in: [...setOfServiceSlugs] }
+            }
+          },
+          {
+            $project: {
+              _id: 0, // Exclude the id field
+              serviceSlug: `$services.slug`,
+              name: { $arrayElemAt: [`$services.slides.text`, 0] }
+            }
+          }
+        ]).exec();
+
+        const nameByServiceSlug = categoryThumbnails.map((x) => {
+          x.formattedName = x.name.toLowerCase()
+            .replace(/\s+/g, '-');
+          return x;
+        }).reduce((acc, cur) => {
+          acc[cur.serviceSlug] = cur;
+          return acc;
+        }, {});
+
+        for (const aClass of classes) {
+          const { name, formattedName } = nameByServiceSlug[aClass.serviceSlug];
+          aClass.name = name;
+          aClass.thumbnailImg = `https://gadzy-work.com/images/classes/${aClass.serviceSlug}/desktop/${formattedName}.png`;
+        }
+
+        const meetingTimes = (await Category.find({
+          slug: 'classes'
+        }, {
+          'services.slug': 1,
+          'services.meetingTimes': 1
+        }).lean()).reduce((acc, cur) => {
+          cur.services.forEach((service) => {
+            acc[service.slug] = service.meetingTimes.sort((a, b) => a.getTime() - b.getTime());
+          });
+          return acc;
+        }, {});
+        const now = DateTime.local();
+        for (const aClass of classes) {
+          if (!aClass.canJoin) {
+            for (const t of meetingTimes[aClass.serviceSlug]) {
+              // t is a date representing a date and time during the week
+              const { meetingTime, diff } = Classes
+                .meetingTimeDifference(now, aClass.duration,
+                  t, 'seconds');
+              aClass.nextClass = meetingTime.toJSDate();
+              aClass.secondsTillClass = diff;
+            }
+          }
+        }
+      }
 
       res.send(new Result({ data: { classes }, success: true }));
-
     } catch (err) {
       console.log(err);
       res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async getJoinClassLink(req: any, res: any) {
+    try {
+      // Determine if you can join a class
+
+      const data = {
+        link: 'https://gadzy-work.com'
+      };
+
+      // If come in for class false: ``
+
+      // If single session update the status to In Use
+
+      res.send(new Result({ data, success: true }));
+    } catch (err) {
+      console.error('Error in getWorkPageData:', err); // Improved error logging
+      res
+        .status(500)
+        .send(new Result({ message: err.message, success: false }));
     }
   }
 
