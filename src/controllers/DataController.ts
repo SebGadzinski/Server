@@ -519,8 +519,6 @@ class DataController {
         query.userId = req.user.data.id;
       }
 
-      // const classes = [];
-
       const classes = await Work.aggregate([
         {
           $match: {
@@ -585,7 +583,7 @@ class DataController {
             duration: '$classDetails.duration',
             serviceSlug: 1,
             classType: 1,
-            canJoin: '$classDetails.canJoin',
+            canJoin: '$classDetails.comeIn',
             instructorInfo: 1
           }
         }
@@ -616,6 +614,7 @@ class DataController {
           {
             $project: {
               _id: 0, // Exclude the id field
+              serviceName: `$services.name`,
               serviceSlug: `$services.slug`,
               name: { $arrayElemAt: [`$services.slides.text`, 0] }
             }
@@ -632,8 +631,8 @@ class DataController {
         }, {});
 
         for (const aClass of classes) {
-          const { name, formattedName } = nameByServiceSlug[aClass.serviceSlug];
-          aClass.name = name;
+          const { serviceName, formattedName } = nameByServiceSlug[aClass.serviceSlug];
+          aClass.name = serviceName;
           aClass.thumbnailImg = `https://gadzy-work.com/images/classes/${aClass.serviceSlug}/desktop/${formattedName}.png`;
         }
 
@@ -672,17 +671,33 @@ class DataController {
 
   public async getJoinClassLink(req: any, res: any) {
     try {
-      // Determine if you can join a class
+      if (!req?.params?.workId) throw new Error('Work ID is required');
 
-      const data = {
-        link: 'https://gadzy-work.com'
-      };
+      const work = await Work.findOne({ _id: req?.params.workId }, { userId: 1, serviceSlug: 1, classType: 1 });
 
-      // If come in for class false: ``
+      // if not admin and not this user send an error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.data.id !== work.userId.toString()
+      ) {
+        await this.accessDenied(req.ip);
+      }
 
-      // If single session update the status to In Use
+      const myClass = await Classes.findOne({ serviceSlug: work.serviceSlug }, { comeIn: 1, meetingLink: 1 }).lean();
+      if (!myClass.comeIn) throw new Error('Cannot join class');
+      if (!myClass.meetingLink) throw new Error('Class getting ready!');
 
-      res.send(new Result({ data, success: true }));
+      if (work.classType === c.CLASS_TYPE.SINGLE_SESSION) {
+        work.status = c.WORK_STATUS_OPTIONS.IN_USE;
+        await work.save();
+      }
+
+      res.send(new Result({
+        data: {
+          comeIn: myClass.comeIn,
+          meetingLink: myClass.meetingLink
+        }, success: true
+      }));
     } catch (err) {
       console.error('Error in getWorkPageData:', err); // Improved error logging
       res
@@ -1409,6 +1424,7 @@ class DataController {
         status,
         user,
         category,
+        classType,
         service,
         payment,
         updateMessage,
@@ -1436,6 +1452,7 @@ class DataController {
           subscription: [],
           initialPayment: 0,
           initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+          classType,
           cancellationPayment: 0,
           cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
           status: c.WORK_STATUS_OPTIONS.MEETING,
@@ -1489,6 +1506,7 @@ class DataController {
       work.initialPaymentStatus = initialPaymentStatus;
       work.cancellationPaymentStatus = cancellationPaymentStatus;
       work.status = status;
+      work.classType = classType;
       work.categorySlug = myCategory.slug;
       work.serviceSlug = myServiceSlug;
       work.initialPayment = payment.initialPayment;
@@ -1517,7 +1535,7 @@ class DataController {
         work.subscription = [newSubscription];
       } else if (subIndex >= 0) {
         const sub = work.subscription[subIndex];
-        const isEnabled = sub.dateActivated > sub.dateDisabled;
+        const isEnabled = !sub.dateDisabled || sub.dateActivated > sub.dateDisabled;
         const subDetailsChanged = sub.interval !== payment.subscription.interval
           || sub.payment !== payment.subscription.payment;
         let newSubAdded = false;
