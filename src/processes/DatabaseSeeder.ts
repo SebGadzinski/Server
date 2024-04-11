@@ -42,23 +42,6 @@ class DatabaseSeeder extends Process {
         }).toJSDate(),
       ]
     },
-    // Killed until I see victor again
-    'language-russian': {
-      instructorIds: [],
-      occupancyCap: 50,
-      duration: 60,
-      comeIn: false,
-      meetingTimes: [
-        DateTime.utc().set({
-          year: 2023, month: 2, day: 28,
-          hour: 22, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
-        DateTime.utc().set({
-          year: 2023, month: 3, day: 2,
-          hour: 22, minute: 0, second: 0, millisecond: 0
-        }).toJSDate(),
-      ]
-    },
     'pec-dancing': {
       instructorIds: [],
       occupancyCap: 50,
