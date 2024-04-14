@@ -184,4 +184,6 @@ router.get('/getClassesPageData', isAuthenticated, DataController.getClassesPage
 
 router.get('/classes/join/:workId', isAuthenticated, DataController.getJoinClassLink);
 
+router.post('/classes/drop/:workId', isAuthenticated, DataController.dropClass);
+
 export default router;

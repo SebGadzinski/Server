@@ -528,7 +528,7 @@ class DataController {
             status: {
               $in: [
                 c.WORK_STATUS_OPTIONS.SUBSCRIBED,
-                c.WORK_STATUS_OPTIONS.USER_ACCEPTED
+                c.WORK_STATUS_OPTIONS.USER_ACCEPTED,
               ]
             }
           },
@@ -697,6 +697,45 @@ class DataController {
           comeIn: myClass.comeIn,
           meetingLink: myClass.meetingLink
         }, success: true
+      }));
+    } catch (err) {
+      console.error('Error in getWorkPageData:', err); // Improved error logging
+      res
+        .status(500)
+        .send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async dropClass(req: any, res: any) {
+    try {
+      if (!req?.params?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.findOne({ _id: req?.params.workId },
+        { userId: 1, subscription: 1, cancellationPaymentStatus: 1, cancellationPayment: 1 });
+
+      // if not admin and not this user send an error
+      if (
+        !req?.user?.data.roles.includes('admin') &&
+        req?.user?.data.id !== work.userId.toString()
+      ) {
+        await this.accessDenied(req.ip);
+      }
+
+      if (work.cancellationPayment > 0 &&
+        work.cancellationPaymentStatus !== c.PAYMENT_STATUS_OPTIONS.COMPLETED) {
+        throw new Error('Cancellation Process Required');
+      }
+
+      work.status = c.WORK_STATUS_OPTIONS.CANCELLED;
+      if (work?.subscription?.length > 0) {
+        work.subscription[work.subscription.length - 1].dateDisabled = new Date();
+      }
+
+      work.cancellationPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
+      await work.save();
+
+      res.send(new Result({
+        success: true
       }));
     } catch (err) {
       console.error('Error in getWorkPageData:', err); // Improved error logging
@@ -1165,6 +1204,13 @@ class DataController {
           quantity: 1,
           price: `${work.cancellationPayment.toFixed(2)} CAD`
         });
+
+        // if this is a subscription it should set to off
+        const subsLength = work?.subscription?.length;
+        if (subsLength > 0) {
+          const sub = work.subscription[subsLength - 1];
+          sub.dateDisabled = new Date();
+        }
 
         await this.sendCancelWorkEmails(false, work, workUser);
       } else {
