@@ -50,7 +50,7 @@ class ZoomMeetingService {
         start_time: startTime,
         duration,
         settings: {},
-        ...(password && { password: meetingPassword }) // Conditionally add password to the request
+        ...(password && { password: meetingPassword })
       };
 
       if (alternativeHosts) {

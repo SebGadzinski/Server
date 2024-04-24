@@ -909,7 +909,7 @@ class DataController {
       // If there is a subscription, user should have saved a card
       if (work?.subscription?.length > 0
         && work.subscription[work.subscription.length - 1].payment > 0
-        && work.subscription[work.subscription.length - 1].paymentMethodId) {
+        && !work.subscription[work.subscription.length - 1].paymentMethodId) {
         throw new Error('Please Fill out card information');
       }
 
