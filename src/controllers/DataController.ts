@@ -683,7 +683,8 @@ class DataController {
         await this.accessDenied(req.ip);
       }
 
-      const myClass = await Classes.findOne({ serviceSlug: work.serviceSlug }, { comeIn: 1, meetingLink: 1 }).lean();
+      const myClass = await Classes.findOne({ serviceSlug: work.serviceSlug },
+        { comeIn: 1, meetingLink: 1, meetingPassword: 1 }).lean();
       if (!myClass.comeIn) throw new Error('Cannot join class');
       if (!myClass.meetingLink) throw new Error('Class getting ready!');
 
@@ -692,10 +693,14 @@ class DataController {
         await work.save();
       }
 
+      const meetingId = myClass.meetingLink.match(/\/j\/(\d+)\?/)[1];
+
       res.send(new Result({
         data: {
           comeIn: myClass.comeIn,
-          meetingLink: myClass.meetingLink
+          meetingLink: myClass.meetingLink,
+          meetingId,
+          meetingPassword: myClass?.meetingPassword
         }, success: true
       }));
     } catch (err) {
