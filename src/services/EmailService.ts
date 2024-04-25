@@ -3,6 +3,9 @@
  * @author Sebastian Gadzinski
  */
 
+// This is to disable console logs
+process.env.DEBUG = '';
+
 import { Mail, Response } from '@sendgrid/helpers/classes';
 import { EmailData } from '@sendgrid/helpers/classes/email-address';
 import sendgrid from '@sendgrid/mail';

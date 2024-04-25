@@ -512,18 +512,11 @@ class DataController {
 
   public async getClassesPageData(req: any, res: any) {
     try {
-      const query: any = {};
-      const isAdmin = req?.user?.data.roles.includes('admin');
-
-      if (!isAdmin) {
-        query.userId = req.user.data.id;
-      }
-
       const classes = await Work.aggregate([
         {
           $match: {
             $expr: {
-              $eq: ['$userId', { $toObjectId: query.userId }]
+              $eq: ['$userId', { $toObjectId: req.user.data.id }]
             },
             status: {
               $in: [
