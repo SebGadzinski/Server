@@ -69,6 +69,10 @@ class ZoomMeetingService {
         }
       );
 
+      if (response?.data?.password) {
+        console.log(response);
+      }
+
       return {
         join_url: response.data.join_url, meetingId: response.data.id,
         password: meetingPassword ?? response.data.password
