@@ -78,6 +78,7 @@ class ZoomMeetingService {
         password: meetingPassword ?? response.data.password
       };
     } catch (error) {
+      console.log(error);
       console.error('Error creating Zoom meeting:', error);
       return {};
     }
