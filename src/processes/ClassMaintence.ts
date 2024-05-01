@@ -188,4 +188,4 @@ class ClassMaintence extends CronProcess {
 }
 
 const classMaintence = new ClassMaintence();
-classMaintence.test();
+classMaintence.run();
