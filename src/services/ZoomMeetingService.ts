@@ -44,7 +44,7 @@ class ZoomMeetingService {
       const zoomReqConfig = {
         method,
         url,
-        headers: { Authorization: `Bearer ${this.accessToken}` },
+        headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
         data: data ? this.prepareMeetingData(data) : null
       };
 
@@ -114,9 +114,12 @@ class ZoomMeetingService {
   }
 
   private async authenticate(): Promise<void> {
-    const credentials = Buffer.from(`${config.zoom.clientId}:${config.zoom.clientSecret}`).toString('base64');
-    const apiUrl = `https://zoom.us/oauth/token?grant_type=client_credentials`;
+    const credentials = Buffer.from(
+      `${config.zoom.clientId}:${config.zoom.clientSecret}`
+    ).toString('base64');
+    const apiUrl = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${config.zoom.accountId}`;
 
+    // Define the token request parameters
     const tokenRequestData = {
       method: 'POST',
       url: apiUrl,
