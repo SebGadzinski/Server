@@ -21,122 +21,108 @@ class ZoomMeetingService {
     this.accessToken = '';
   }
 
-  public async createMeeting({
-    topic, startDate, duration, alternativeHosts, password
-  }: {
+  public async createMeeting(meetingDetails: {
     topic: string,
     startDate: Date,
     duration: number,
     alternativeHosts?: string[],
     password?: boolean
   }): Promise<{ join_url?: string; meetingId?: string, password?: string }> {
-    if (!this.accessToken) {
-      await this.authenticate();
-    }
-
-    try {
-      let meetingPassword;
-
-      // Generate password if password == true
-      if (password) {
-        meetingPassword = this.generatePassword();
-      }
-
-      const startTime = startDate.toISOString().replace('.000Z', 'Z');
-
-      const payload: any = {
-        topic,
-        type: 2,
-        start_time: startTime,
-        duration,
-        settings: {},
-        ...(password && { password: meetingPassword })
-      };
-
-      if (alternativeHosts) {
-        payload.settings.alternative_hosts = alternativeHosts.join(',');
-      }
-
-      // Generate password if password == true
-      const response = await axios.post(
-        'https://api.zoom.us/v2/users/me/meetings',
-        payload,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (response?.data?.password) {
-        console.log(response);
-      }
-
-      return {
-        join_url: response.data.join_url, meetingId: response.data.id,
-        password: meetingPassword ?? response.data.password
-      };
-    } catch (error) {
-      console.log(error);
-      console.error('Error creating Zoom meeting:', error);
-      return {};
-    }
+    return this.request('post', 'https://api.zoom.us/v2/users/me/meetings', meetingDetails);
   }
 
   public async cancelMeeting(meetingId: string): Promise<boolean> {
+    return this.request('delete', `https://api.zoom.us/v2/meetings/${meetingId}`);
+  }
+
+  private async request(method: string, url: string, data?: any): Promise<any> {
     if (!this.accessToken) {
       await this.authenticate();
     }
 
     try {
-      await axios.delete(`https://api.zoom.us/v2/meetings/${meetingId}`, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`
-        }
-      });
+      const config = {
+        method: method,
+        url: url,
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+        data: data ? this.prepareMeetingData(data) : null
+      };
 
-      return true;
+      const response = await axios(config);
+      return method === 'post' ? this.formatMeetingResponse(response) : true;
     } catch (error) {
-      console.error('Error cancelling Zoom meeting:', error);
-      return false;
+      if (error.response && error.response.status === 401) {
+        await this.authenticate();
+        return this.request(method, url, data);
+      }
+      console.error(`Error handling Zoom request (${method}):`, error);
+      return method === 'post' ? {} : false;
     }
   }
 
-  // Utility function to generate a random password
+  private prepareMeetingData(details: {
+    topic: string,
+    startDate: Date,
+    duration: number,
+    alternativeHosts?: string[],
+    password?: boolean
+  }): any {
+    let meetingPassword;
+
+    if (details.password) {
+      meetingPassword = this.generatePassword();
+    }
+
+    const startTime = details.startDate.toISOString().replace('.000Z', 'Z');
+    const payload: any = {
+      topic: details.topic,
+      type: 2,
+      start_time: startTime,
+      duration: details.duration,
+      settings: {},
+      ...(details.password && { password: meetingPassword })
+    };
+
+    if (details.alternativeHosts) {
+      payload.settings.alternative_hosts = details.alternativeHosts.join(',');
+    }
+
+    return payload;
+  }
+
+  private formatMeetingResponse(response: any): { join_url?: string; meetingId?: string, password?: string } {
+    const data = response.data;
+    return {
+      join_url: data.join_url,
+      meetingId: data.id,
+      password: data.password
+    };
+  }
+
   private generatePassword(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@-_';
     let result = '';
-    const length = 10; // Maximum length of 10 characters
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < 10; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
   }
 
   private async authenticate(): Promise<void> {
-    try {
-      const credentials = Buffer.from(
-        `${config.zoom.clientId}:${config.zoom.clientSecret}`
-      ).toString('base64');
-      const apiUrl = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${config.zoom.accountId}`;
+    const credentials = Buffer.from(`${config.zoom.clientId}:${config.zoom.clientSecret}`).toString('base64');
+    const apiUrl = `https://zoom.us/oauth/token?grant_type=client_credentials`;
 
-      // Define the token request parameters
-      const tokenRequestData = {
-        method: 'POST',
-        url: apiUrl,
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      };
+    const tokenRequestData = {
+      method: 'POST',
+      url: apiUrl,
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    };
 
-      // Send the token request
-      const response = await axios(tokenRequestData);
-      this.accessToken = response.data.access_token;
-    } catch (error) {
-      console.error('Error obtaining Zoom access token:', error);
-    }
+    const response = await axios(tokenRequestData);
+    this.accessToken = response.data.access_token;
   }
 }
 
