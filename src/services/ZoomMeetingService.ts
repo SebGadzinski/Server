@@ -41,14 +41,19 @@ class ZoomMeetingService {
     }
 
     try {
-      const config = {
-        method: method,
-        url: url,
-        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+      const zoomReqConfig = {
+        method,
+        url,
+        headers: { Authorization: `Bearer ${this.accessToken}` },
         data: data ? this.prepareMeetingData(data) : null
       };
 
-      const response = await axios(config);
+      const response = await axios(zoomReqConfig);
+
+      if (!response?.data?.password) {
+        console.log(response);
+      }
+
       return method === 'post' ? this.formatMeetingResponse(response) : true;
     } catch (error) {
       if (error.response && error.response.status === 401) {
