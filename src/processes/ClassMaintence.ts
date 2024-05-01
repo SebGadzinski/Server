@@ -93,7 +93,7 @@ class ClassMaintence extends CronProcess {
                                 const title = `${service.name} Open`;
                                 const header = `Don't Miss Your Next Class!`;
                                 const body = `Class is now open, instructor will be there shortly.${passwordInfo}`;
-                                const route = `/work?id=${user.workId}`;
+                                const route = `/my-classes?name=${encodeURIComponent(service.name)}`;
                                 const link = `${config.frontEndDomain}${route}`; // Adjust the link as needed
                                 const btnMessage = `Go To Class`;
 
@@ -188,4 +188,4 @@ class ClassMaintence extends CronProcess {
 }
 
 const classMaintence = new ClassMaintence();
-classMaintence.run();
+classMaintence.test();
