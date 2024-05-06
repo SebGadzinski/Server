@@ -36,8 +36,10 @@ class ClassMaintence extends CronProcess {
                 if (stopSearching) break;
                 const classToUpdate = await Classes.findOne({
                     serviceSlug: service.slug,
-                    $or: [{ updateLinkDate: { $exists: false } },
-                    { updateLinkDate: { $lte: past } }]
+                    $or: [
+                        { updateLinkDate: { $exists: false } },
+                        { updateLinkDate: { $lte: past } }
+                    ]
                 });
                 if (classToUpdate) {
                     const { meetingTime, diff, isMeetingRunning } = Classes
@@ -168,7 +170,7 @@ class ClassMaintence extends CronProcess {
                             classToUpdate.meetingPassword = undefined;
                             await Work.updateMany({
                                 status: 'In Use',
-                                categorySlug: 'Classes',
+                                categorySlug: 'classes',
                                 serviceSlug: classToUpdate.serviceSlug,
                                 classType: c.CLASS_TYPE.SINGLE_SESSION
                             }, {

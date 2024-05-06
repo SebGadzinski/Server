@@ -520,6 +520,7 @@ class DataController {
             },
             status: {
               $in: [
+                c.WORK_STATUS_OPTIONS.IN_USE,
                 c.WORK_STATUS_OPTIONS.SUBSCRIBED,
                 c.WORK_STATUS_OPTIONS.USER_ACCEPTED,
               ]
@@ -556,6 +557,7 @@ class DataController {
         {
           $group: {
             _id: '$_id',
+            workStatus: { $first: '$status' },
             classDetails: { $first: '$classDetails' },
             categorySlug: { $first: '$categorySlug' },
             serviceSlug: { $first: '$serviceSlug' },
@@ -564,7 +566,7 @@ class DataController {
             instructorInfo: {
               $push: {
                 email: `$userDetails.email`,
-                fullName: `$userDetails.fullName` // Directly using the fullName field
+                fullName: `$userDetails.fullName`
               }
             }
           }
@@ -573,6 +575,7 @@ class DataController {
           $project: {
             _id: 0,
             workId: '$_id',
+            workStatus: 1,
             duration: '$classDetails.duration',
             serviceSlug: 1,
             classType: 1,
