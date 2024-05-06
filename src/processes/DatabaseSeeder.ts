@@ -544,7 +544,7 @@ class DatabaseSeeder extends Process {
           .toLowerCase()
           .replace(/\s+/g, '-');
         const cateogryThumbnail = `https://gadzy-work.com/images/${category.slug}/${category.services[0].slug}/desktop/${firstService}`;
-        const fileType = ['software', 'classes'].some((x) => x === category.slug) ? 'png' : 'JPG';
+        const fileType = ['software', 'classes', 'design'].some((x) => x === category.slug) ? 'png' : 'JPG';
         if (category.name === 'Videography') category.thumbnailImg = 'https://cs3design.com/wp-content/uploads/2020/06/videographer-footer-background.jpg';
         else if (category.name === 'Photography') category.thumbnailImg = 'https://gadzy-work.com/images/photography/card.png';
         else category.thumbnailImg = `${cateogryThumbnail}.${fileType}`;
