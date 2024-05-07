@@ -332,6 +332,10 @@ class DatabaseSeeder extends Process {
         videography: {
           accepting: false,
           noService: []
+        },
+        design: {
+          accepting: false,
+          noService: []
         }
       }
     };
@@ -341,6 +345,7 @@ class DatabaseSeeder extends Process {
       acceptingWork.value.software.accepting = true;
       acceptingWork.value.photography.accepting = true;
       acceptingWork.value.videography.accepting = true;
+      acceptingWork.value.design.accepting = true;
     }
 
     // TODO: Make custom for prod
