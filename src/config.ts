@@ -21,7 +21,8 @@ const stripe = {
   classes: process.env.STRIPE_SK_CLASSES,
   software: process.env.STRIPE_SK_SOFTWARE,
   photography: process.env.STRIPE_SK_PHOTOGRAPHY,
-  videography: process.env.STRIPE_SK_VIDEOGRAPHY
+  videography: process.env.STRIPE_SK_VIDEOGRAPHY,
+  design: process.env.STRIPE_SK_DESIGN
 };
 
 const config = {

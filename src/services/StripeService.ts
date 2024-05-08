@@ -27,6 +27,9 @@ const stripe = {
     videography: new Stripe(config.stripe.videography, {
         apiVersion: '2023-10-16'
     }),
+    design: new Stripe(config.stripe.design, {
+        apiVersion: '2023-10-16'
+    }),
 };
 
 class StripeService {
