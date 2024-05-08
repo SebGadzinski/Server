@@ -142,7 +142,7 @@ class UserService {
     }
 
     // Check for at least one special character
-    const specialCharacters = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+    const specialCharacters = /[!@#$%^&*()_+\-=\[\]{};':"\\|~`,.<>\/?]+/;
     if (!specialCharacters.test(password)) {
       throw new Error(
         'Password should contain at least one special character (e.g., !, @, #, $, etc.).'
