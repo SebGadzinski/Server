@@ -14,6 +14,7 @@ import {
 const router = express.Router({});
 
 router.get('/getHomePageData', DataController.getHomePageData);
+router.get('/getHomePageDataV2', DataController.getHomePageDataV2);
 
 router.post('/getCategoryPageData', DataController.getCategoryPageData);
 
