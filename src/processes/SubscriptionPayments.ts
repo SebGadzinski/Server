@@ -42,17 +42,22 @@ class SubscriptionPayments extends CronProcess {
 
         for (const work of worksToBill) {
             const userToBill = await User.findById(work.userId).lean();
-            let last4Digits = 'Unknown';
-            try {
-                const subscription = work.subscription[work.subscription.length - 1];
-                last4Digits = await StripeService.getLast4DigitsOfCard(work.categorySlug, subscription.paymentMethodId);
-                await StripeService.processSubscriptionPayment(userToBill, work);
-            } catch (err) {
-                // Update work to halted due to subscription payment not processed?
-                work.status = c.WORK_STATUS_OPTIONS.PAYMENTS_FAILED;
-                work.save();
-                console.error(`Error processing subscription for work ID ${work._id}: ${err}`);
-                await this.sendErrorEmail(err, work, userToBill.email, last4Digits);
+            if (userToBill) {
+                let last4Digits = 'Unknown';
+                try {
+                    const subscription = work.subscription[work.subscription.length - 1];
+                    last4Digits = await StripeService.getLast4DigitsOfCard(
+                        work.categorySlug, subscription.paymentMethodId);
+                    await StripeService.processSubscriptionPayment(userToBill, work);
+                } catch (err) {
+                    // Update work to halted due to subscription payment not processed?
+                    work.status = c.WORK_STATUS_OPTIONS.PAYMENTS_FAILED;
+                    work.save();
+                    console.error(`Error processing subscription for work ID ${work._id}: ${err}`);
+                    await this.sendErrorEmail(err, work, userToBill.email, last4Digits);
+                }
+            } else {
+                work.status = c.WORK_STATUS_OPTIONS.NEEDS_ATTENTION;
             }
         }
     }

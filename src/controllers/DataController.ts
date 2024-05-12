@@ -20,6 +20,7 @@ import fileService from '../services/FileService';
 import SecurityService from '../services/SecurityService';
 import StripeService from '../services/StripeService';
 import SubscriptionService from '../services/SubscriptionService';
+import WorkPaymentService from '../services/WorkPaymentService';
 import ZoomMeetingService from '../services/ZoomMeetingService';
 
 const security = SecurityService.getInstance();
@@ -30,8 +31,6 @@ class DataController {
   };
 
   constructor() {
-    this.sendCancelWorkEmails = this.sendCancelWorkEmails.bind(this);
-    this.sendConfirmWorkEmails = this.sendConfirmWorkEmails.bind(this);
     // Binding all methods to ensure the correct context of `this`
     this.getCollection = this.getCollection.bind(this);
     this.getHomePageData = this.getHomePageData.bind(this);
@@ -53,8 +52,9 @@ class DataController {
     this.getProfile = this.getProfile.bind(this);
     this.saveProfile = this.saveProfile.bind(this);
     this.accessDenied = this.accessDenied.bind(this); // This was the initial method with issues
-    this.generatePaymentIntent = this.generatePaymentIntent.bind(this);
-    this.confirmPaymentIntent = this.confirmPaymentIntent.bind(this);
+    this.generateSessionPaymentIntent = this.generateSessionPaymentIntent.bind(this);
+    this.generateAttachedCardPaymentIntent = this.generateAttachedCardPaymentIntent.bind(this);
+    this.confirmSessionPaymentIntent = this.confirmSessionPaymentIntent.bind(this);
     this.acceptingWork = this.acceptingWork.bind(this);
     this.saveWorkTemplate = this.saveWorkTemplate.bind(this);
     this.stripMongo = this.stripMongo.bind(this);
@@ -850,6 +850,7 @@ class DataController {
               }
             },
             status: 1,
+            paymentItems: 1,
             meetingLink: {
               $ifNull: [
                 { $arrayElemAt: ['$meetingDetails.link', 0] },
@@ -892,6 +893,10 @@ class DataController {
             x.classLink = myClass.meetingLink;
           }
         }
+        if (!x.status.includes('Cancel') && x.paymentItems.some((y) => y.status !== 'Completed')) {
+          x.paymentsRequired = true;
+        }
+        delete x.paymentItems;
         return x;
       });
 
@@ -966,60 +971,11 @@ class DataController {
       work.initialPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
       work.save();
 
-      await this.sendConfirmWorkEmails(isAdmin, work, workUser);
+      await EmailService.sendConfirmWorkEmails(isAdmin, work, workUser);
 
       res.send(new Result({ success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
-    }
-  }
-
-  public async sendConfirmWorkEmails(
-    isAdmin: boolean,
-    work: IWork,
-    workUser: IUser
-  ) {
-    const theUser = isAdmin ? 'Admin' : workUser.fullName;
-    const emailUsers = [workUser.email, config.sendGrid.email.alert];
-    for (const email of emailUsers) {
-      let appNotification: any = {};
-
-      if (email === workUser.email) {
-        appNotification = {
-          id: workUser._id.toString(),
-          notification: new Notification(
-            'Work Confirmed',
-            `${theUser} Confirmed Work`,
-            {
-              dotdotdot: {
-                progress: false,
-                color: 'accent',
-                position: 'center'
-              },
-              to: {
-                label: 'VISIT',
-                color: 'primary',
-                route: {
-                  path: `/work/${work._id.toString()}`
-                }
-              }
-            }
-          )
-        };
-      }
-
-      await EmailService.sendNotificationEmail(
-        {
-          to: email,
-          title: 'Work Confirmed',
-          header: `${theUser} Confirmed Work`,
-          body: `${theUser} has confirmed the work id ${work._id}`,
-          link: `${config.frontEndDomain}/work/${work._id}`,
-          btnMessage: 'View On Site',
-          appNotification,
-          work
-        }
-      );
     }
   }
 
@@ -1042,7 +998,53 @@ class DataController {
     }
   }
 
-  public async generatePaymentIntent(req: any, res: any) {
+  public async generateAttachedCardPaymentIntent(req: any, res: any) {
+    try {
+      if (!req?.body?.workId) throw new Error('Work ID is required');
+
+      const work = await Work.findOne({ _id: req.body.workId });
+      await this.acceptingWork(work.categorySlug, work.serviceSlug);
+
+      if (
+        !req.user.data.roles.includes('admin') &&
+        req.user.data.id !== work.userId.toString()
+      ) {
+        // if not admin and not this user send an error
+        await this.accessDenied(req.ip);
+        return;
+      }
+
+      const user = await User.findById(req.user.data.id);
+      const details = WorkPaymentService.getPaymentDetails(req.body, work);
+      await StripeService.payViaAttachedCard(user, work, details);
+
+      res.send(
+        new Result({
+          data: {},
+          success: true
+        })
+      );
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async confirmAttachedCardPaymentIntent(req: any, res: any) {
+    try {
+      const { work, paymentHistory } = await WorkPaymentService.getConfirmationPaymentDetails(req?.query?.id);
+
+      const paymentIntent = await StripeService.getPaymentIntent(paymentHistory.intentId, work.categorySlug);
+      if (paymentIntent.status !== 'succeeded') {
+        throw new Error('Payment not successful');
+      }
+
+      res.send(new Result({ data: work._id, success: true }));
+    } catch (err) {
+      res.send(new Result({ message: err.message, success: false }));
+    }
+  }
+
+  public async generateSessionPaymentIntent(req: any, res: any) {
     try {
       if (!req?.body?.workId) throw new Error('Work ID is required');
 
@@ -1066,71 +1068,8 @@ class DataController {
         return;
       }
 
-      let amount = 0;
-      let name = '';
-      const currency = 'cad';
-      const paymentCompletedMsg = `Payment already completed`;
-
-      if (req.body.type === c.PAYMENT_HISTORY_TYPE.CONFIRMATION) {
-        if (work.initialPaymentStatus === c.PAYMENT_STATUS_OPTIONS.COMPLETED) {
-          throw new Error(paymentCompletedMsg);
-        }
-        amount = work.initialPayment;
-        name = 'Initial Payment for Work ID ' + req.body.workId;
-      } else if (req.body.type === c.PAYMENT_HISTORY_TYPE.PAYMENT_ITEM && req.body.paymentItemId) {
-        // Get the payment item and add it name
-        const paymentItem = work.paymentItems.find(
-          (x) => x._id.toString() === req.body.paymentItemId
-        );
-        if (!paymentItem) {
-          throw new Error(`No payment item found ${req.body.paymentItemId}`);
-        }
-        if (paymentItem.status === c.PAYMENT_STATUS_OPTIONS.COMPLETED) {
-          throw new Error(paymentCompletedMsg);
-        }
-        name = `Payment '${paymentItem.name}' for Work ID ${req.body.workId}`;
-        amount = paymentItem.payment;
-      } else if (req.body.type === c.PAYMENT_HISTORY_TYPE.FULL) {
-        const unpaidPaymentItems = work.paymentItems.filter(
-          (x) => x.status !== c.PAYMENT_STATUS_OPTIONS.COMPLETED
-        );
-        if (unpaidPaymentItems.length === 0) {
-          throw new Error(paymentCompletedMsg);
-        }
-        amount = unpaidPaymentItems.reduce((total, currentItem) => {
-          return total + currentItem.payment;
-        }, 0);
-        name = 'Complete Payment for Work ID ' + req.body.workId;
-      } else if (req.body.type === c.PAYMENT_HISTORY_TYPE.CANCELLATION) {
-        if (work.cancellationPaymentStatus === c.PAYMENT_STATUS_OPTIONS.COMPLETED) {
-          throw new Error(paymentCompletedMsg);
-        }
-        amount = work.cancellationPayment;
-        name = 'Cancellation Payment for Work ID ' + req.body.workId;
-      } else {
-        throw new Error('Endpoint not found');
-      }
-
-      // Create a new Payment History
-      const newPaymentHistory: any = {
-        _id: new mongoose.Types.ObjectId(),
-        type: req.body.type,
-        sessionId: '',
-        status: 'New',
-        createdDate: new Date()
-      };
-
-      if (req.body.paymentItemId) {
-        newPaymentHistory.paymentItemId = req.body.paymentItemId;
-      }
-
-      // TODO: Get Session ID Based off work Category
-      let ipAddress = null;
-      if (req?.ip?.startsWith('::ffff:')) {
-        ipAddress = req.ip.substring(7);
-      }
-
-      const session = await StripeService.createCheckoutSession(work, currency, name, amount, newPaymentHistory);
+      const { amount, name, newPaymentHistory } = WorkPaymentService.getPaymentDetails(req.body, work);
+      const session = await StripeService.createCheckoutSession(work, 'cad', name, amount, newPaymentHistory);
 
       newPaymentHistory.sessionId = session.id;
       work.paymentHistory.push(newPaymentHistory);
@@ -1147,40 +1086,9 @@ class DataController {
     }
   }
 
-  public async confirmPaymentIntent(req: any, res: any) {
+  public async confirmSessionPaymentIntent(req: any, res: any) {
     try {
-      if (!req?.query?.id) throw new Error('Payement History ID is required');
-
-      const matchQuery: any = {
-        $expr: {
-          $in: [
-            { $toObjectId: req.query.id },
-            {
-              $map: {
-                input: '$paymentHistory',
-                as: 'payment',
-                in: '$$payment._id'
-              }
-            }
-          ]
-        }
-      };
-
-      const work = await Work.findOne(matchQuery);
-      if (!work) {
-        throw new Error('No Work Found');
-      }
-
-      const workUser = await User.findOne({ _id: work.userId });
-      if (!workUser) throw new Error('User not found');
-
-      // Get the payment history object from the list
-      const paymentHistory = work.paymentHistory.find(
-        (ph) => ph._id.toString() === req.query.id
-      );
-      if (!paymentHistory) {
-        throw new Error('Payment History Not Found');
-      }
+      const { work, paymentHistory, workUser } = await WorkPaymentService.getConfirmationPaymentDetails(req?.query?.id);
 
       const checkoutSession = await StripeService.getCheckoutSession(work.categorySlug, paymentHistory.sessionId);
 
@@ -1188,99 +1096,10 @@ class DataController {
         throw new Error('Payment not successful');
       }
 
-      paymentHistory.status = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
-      let transactionItems = [];
-
-      // Update the statuses of content of work
-      if (paymentHistory.type === c.PAYMENT_HISTORY_TYPE.CONFIRMATION) {
-        work.status = c.WORK_STATUS_OPTIONS.USER_ACCEPTED;
-        work.initialPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
-        if (work?.subscription?.length > 0) {
-          let sub = work?.subscription[work.subscription.length - 1];
-          sub = SubscriptionService.completeSubscription(sub);
-          work.status = c.WORK_STATUS_OPTIONS.SUBSCRIBED;
-          work.completeSubscription = undefined;
-        }
-
-        transactionItems.push({
-          name: 'Initial Payment',
-          quantity: 1,
-          price: `${work.initialPayment.toFixed(2)} CAD`
-        });
-
-        await this.sendConfirmWorkEmails(false, work, workUser);
-      } else if (
-        paymentHistory.type === c.PAYMENT_HISTORY_TYPE.PAYMENT_ITEM &&
-        paymentHistory?.paymentItemId
-      ) {
-        const paymentItem = work.paymentItems.find(
-          (pi) => pi._id.toString() === paymentHistory.paymentItemId
-        );
-        if (paymentItem) {
-          paymentItem.status = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
-          transactionItems.push({
-            name: paymentItem.name,
-            quantity: 1,
-            price: `${paymentItem.payment.toFixed(2)} CAD`
-          });
-        }
-      } else if (paymentHistory.type === c.PAYMENT_HISTORY_TYPE.FULL) {
-        work.paymentItems.map((x) => {
-          x.status = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
-          return x;
-        });
-        transactionItems = work.paymentItems.map((pi) => ({
-          name: pi.name,
-          quantity: 1,
-          price: `${pi.payment.toFixed(2)} CAD`
-        }));
-      } else if (paymentHistory.type === c.PAYMENT_HISTORY_TYPE.CANCELLATION) {
-        work.status = c.WORK_STATUS_OPTIONS.CANCELLED;
-        work.cancellationPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
-        transactionItems.push({
-          name: 'Cancellation',
-          quantity: 1,
-          price: `${work.cancellationPayment.toFixed(2)} CAD`
-        });
-
-        // if this is a subscription it should set to off
-        const subsLength = work?.subscription?.length;
-        if (subsLength > 0) {
-          const sub = work.subscription[subsLength - 1];
-          sub.dateDisabled = new Date();
-        }
-
-        await this.sendCancelWorkEmails(false, work, workUser);
-      } else {
-        throw new Error(`Type ${paymentHistory.type} not found`);
-      }
-
-      await work.save();
-
-      const transactionDetails = {
-        date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
-        amount: checkoutSession.amount_total / 100, // Assuming amount_total is in cents
-        items: transactionItems,
-      };
-
-      // Gather meta data
-      const names = await Category.getNames(work.categorySlug, work.serviceSlug);
-      const metaData = {
-        workId: work._id,
-        category: names.category,
-        service: names.service
-      };
-
       const card = await StripeService.getLast4DigitsOfCardFromSession(work.categorySlug, checkoutSession);
+      const amount = Number((checkoutSession.amount_total / 100).toFixed(2));
 
-      // Send receipt email
-      await EmailService.sendReceiptEmail({
-        to: workUser.email,
-        metaData,
-        transactionDetails,
-        paymentMethod: `**** **** **** ${card}`,
-        transactionId: paymentHistory._id.toString()
-      });
+      await WorkPaymentService.afterPaymentProcess(workUser, work, paymentHistory, amount, card);
 
       res.send(new Result({ data: work._id, success: true }));
     } catch (err) {
@@ -1331,9 +1150,13 @@ class DataController {
       // You cannot confirm work this way if there is a initial payment
       if (work.cancellationPayment > 0) throw new Error('Payment must be made');
 
-      const meeting = await Meetings.findOne({ _id: work.meetingId });
-      await Meetings.deleteOne({ _id: work.meetingId });
-      await ZoomMeetingService.cancelMeeting(meeting.zoomMeetingId);
+      try {
+        const meeting = await Meetings.findOne({ _id: work.meetingId });
+        await Meetings.deleteOne({ _id: work.meetingId });
+        await ZoomMeetingService.cancelMeeting(meeting.zoomMeetingId);
+      } catch (err) {
+        console.log(`Issue cancelling meeting for work: ${work._id}`);
+      }
 
       // If some payment items got completed do this but it can be done by
       // admin anyway w editing
@@ -1341,58 +1164,11 @@ class DataController {
       work.cancellationPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
       work.save();
 
-      await this.sendCancelWorkEmails(isAdmin, work, workUser);
+      await EmailService.sendCancelWorkEmails(isAdmin, work, workUser);
 
       res.send(new Result({ success: true }));
     } catch (err) {
       res.send(new Result({ message: err.message, success: false }));
-    }
-  }
-
-  public async sendCancelWorkEmails(
-    isAdmin: boolean,
-    work: IWork,
-    workUser: IUser
-  ) {
-    const theUser = isAdmin ? 'Admin' : workUser.fullName;
-    const emailUsers = [workUser.email, config.sendGrid.email.alert];
-    for (const email of emailUsers) {
-      let appNotification: any = {};
-
-      if (email === workUser.email) {
-        appNotification = {
-          id: workUser._id.toString(),
-          notification: new Notification(
-            'Work Cancelled',
-            `${theUser} Cancelled Work`,
-            {
-              dotdotdot: {
-                progress: false,
-                color: 'accent',
-                position: 'center'
-              },
-              to: {
-                label: 'VISIT',
-                color: 'primary',
-                route: {
-                  path: `/work/${work._id.toString()}`
-                }
-              }
-            }
-          )
-        };
-      }
-
-      await EmailService.sendNotificationEmail({
-        to: email,
-        title: 'Work Cancelled',
-        header: `${theUser} Cancelled Work`,
-        body: `${theUser} has cancelled work ${work._id}`,
-        link: `${config.frontEndDomain}/work/${work._id}`,
-        btnMessage: 'View On Site',
-        work
-      }
-      );
     }
   }
 
@@ -2442,29 +2218,50 @@ class DataController {
       // Generate payments from work.paymentHistory
       for (const payment of work.paymentHistory
         .filter((x) => x.status === c.PAYMENT_STATUS_OPTIONS.COMPLETED)) {
-        const session = await StripeService
-          .getCheckoutSession(work.categorySlug, payment.sessionId);
-        const lineItemResponse: any = await StripeService
-          .getLineItems(work.categorySlug, payment.sessionId);
-        const items = lineItemResponse.data.map((x) => {
-          const amount = Number((x.amount_total / 100).toFixed(2));
-          return {
-            description: x.description,
-            total: `${amount.toFixed(2)} CAD`,
-          };
-        });
-        if (session.payment_status === 'paid') {
-          const amount = Number((session.amount_total / 100).toFixed(2));
-          receipt.totals.checkout += amount;
-          const paymentMethod = await StripeService
-            .getLast4DigitsOfCardFromSession(work.categorySlug, session);
-          receipt.checkouts.push({
-            id: payment._id,
-            payment: `${amount.toFixed(2)} CAD`,
-            items,
-            paymentMethod: `**** **** **** ${paymentMethod}`,
-            date: payment.createdDate
-          });
+        if (payment.intentId) {
+          const paymentIntent = await StripeService.getPaymentIntent(payment.intentId, work.categorySlug);
+          if (paymentIntent.status === 'succeeded') {
+            const amount = Number((paymentIntent.amount / 100).toFixed(2));
+            const items = [{
+              description: paymentIntent.description,
+              total: `${amount.toFixed(2)} CAD`,
+            }];
+            const paymentMethod = await StripeService
+              .getLast4DigitsOfCard(work.categorySlug, paymentIntent.payment_method.toString());
+            receipt.totals.checkout += amount;
+            receipt.checkouts.push({
+              id: payment._id,
+              payment: `${amount.toFixed(2)} CAD`,
+              items,
+              paymentMethod: `**** **** **** ${paymentMethod}`,
+              date: payment.createdDate
+            });
+          }
+        } else if (payment.sessionId) {
+          const session = await StripeService
+            .getCheckoutSession(work.categorySlug, payment.sessionId);
+          if (session.payment_status === 'paid') {
+            const lineItemResponse: any = await StripeService
+              .getLineItems(work.categorySlug, payment.sessionId);
+            const items = lineItemResponse.data.map((x) => {
+              const itemAmount = Number((x.amount_total / 100).toFixed(2));
+              return {
+                description: x.description,
+                total: `${itemAmount.toFixed(2)} CAD`,
+              };
+            });
+            const amount = Number((session.amount_total / 100).toFixed(2));
+            receipt.totals.checkout += amount;
+            const paymentMethod = await StripeService
+              .getLast4DigitsOfCardFromSession(work.categorySlug, session);
+            receipt.checkouts.push({
+              id: payment._id,
+              payment: `${amount.toFixed(2)} CAD`,
+              items,
+              paymentMethod: `**** **** **** ${paymentMethod}`,
+              date: payment.createdDate
+            });
+          }
         }
       }
 

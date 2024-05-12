@@ -8,6 +8,16 @@ import SubscriptionService from '../services/SubscriptionService';
 import { transform } from '../utils/transform';
 import Worker from './Worker';
 
+export interface IPaymentHistory {
+  _id: Schema.Types.ObjectId;
+  type: string;
+  sessionId?: string;
+  intentId?: string;
+  paymentItemId?: string;
+  status: string;
+  createdDate: Date;
+}
+
 interface ISubscription extends Document {
   _id: Schema.Types.ObjectId;
   payment: number;
@@ -59,7 +69,8 @@ export interface IWork extends Document {
     {
       _id: Schema.Types.ObjectId;
       type: string;
-      sessionId: string;
+      sessionId?: string;
+      intentId?: string;
       paymentItemId: string;
       status: string;
       createdDate: Date;
@@ -131,7 +142,8 @@ const WorkSchema: Schema = new mongoose.Schema(
     paymentHistory: [
       {
         type: { type: String, required: true },
-        sessionId: { type: String, required: true },
+        sessionId: { type: String, required: false },
+        intentId: { type: String, required: false },
         paymentItemId: { type: String, required: false },
         status: { type: String, required: true },
         createdDate: { type: Date, required: true }

@@ -13,6 +13,7 @@ import { IUser } from '../models/User';
 import Work, { IWork } from '../models/Work';
 import EmailService from '../services/EmailService';
 import SubscriptionService from './SubscriptionService';
+import WorkPaymentService, { IPaymentDetails } from './WorkPaymentService';
 
 const stripe = {
     classes: new Stripe(config.stripe.classes, {
@@ -191,6 +192,61 @@ class StripeService {
                 paymentMethod: `**** **** **** ${card}`,
                 transactionId: newPaymentHistory._id.toString()
             });
+        } catch (err) {
+            console.error(`Error processing payment for work ID ${work._id}: ${err}`);
+            throw err;
+        }
+    }
+
+    public async payViaAttachedCard(user: IUser, work: IWork, details: IPaymentDetails): Promise<any> {
+        const stripeAccount = stripe[work.categorySlug];
+        if (!stripeAccount) {
+            throw new Error(`Invalid category slug: ${work.categorySlug}`);
+        }
+
+        try {
+            const customer = await this.findStripeCustomer(user.email, stripeAccount);
+            if (!customer) {
+                throw new Error('Customer not found');
+            }
+
+            // Validate Subscription exists
+            if (work?.subscription?.length < 1) throw new Error('No Subscription Found');
+            const sub = work.subscription[work.subscription.length - 1];
+            if ((!sub.dateDisabled || sub.dateDisabled < sub.dateActivated)
+                && !sub.paymentMethodId) {
+                throw new Error('Please provide a payment method');
+            }
+
+            const paymentMethod = await stripeAccount.paymentMethods.retrieve(
+                sub.paymentMethodId
+            );
+            const paymentAmount = Number((details.amount * 100).toFixed(2));
+
+            const paymentIntent = await stripeAccount.paymentIntents.create({
+                amount: paymentAmount,
+                currency: 'cad',
+                customer: customer.id,
+                payment_method: paymentMethod.id,
+                confirm: true,
+                return_url: `${config.domain}/api/data/work/pay/attached-card/confirm?id=${details.newPaymentHistory._id}`,
+                description: `${details.name}`
+            });
+
+            details.newPaymentHistory.intentId = paymentIntent.id;
+            if (paymentIntent.status !== 'succeeded') {
+                details.newPaymentHistory.status = c.PAYMENT_STATUS_OPTIONS.FAILED;
+                work.paymentHistory.push(details.newPaymentHistory);
+                await work.save();
+                throw new Error('Payment not successful');
+            } else {
+                details.newPaymentHistory.status = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
+                work.paymentHistory.push(details.newPaymentHistory);
+                await work.save();
+                await WorkPaymentService.afterPaymentProcess(user, work,
+                    work.paymentHistory[work.paymentHistory.length - 1],
+                    details.amount, paymentMethod.card.last4);
+            }
         } catch (err) {
             console.error(`Error processing payment for work ID ${work._id}: ${err}`);
             throw err;

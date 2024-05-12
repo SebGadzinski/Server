@@ -15,6 +15,7 @@ import validator from 'validator';
 import Notification from '../classes/Notification';
 import config from '../config';
 import { Category } from '../models';
+import { IUser } from '../models/User';
 import { IWork } from '../models/Work';
 import NotificationService from './NotificationService';
 
@@ -272,6 +273,102 @@ class EmailService implements IEmailService {
     });
 
     await this.sendEmail(mail, true);
+  }
+
+  public async sendConfirmWorkEmails(
+    isAdmin: boolean,
+    work: IWork,
+    workUser: IUser
+  ) {
+    const theUser = isAdmin ? 'Admin' : workUser.fullName;
+    const emailUsers = [workUser.email, config.sendGrid.email.alert];
+    for (const email of emailUsers) {
+      let appNotification: any = {};
+
+      if (email === workUser.email) {
+        appNotification = {
+          id: workUser._id.toString(),
+          notification: new Notification(
+            'Work Confirmed',
+            `${theUser} Confirmed Work`,
+            {
+              dotdotdot: {
+                progress: false,
+                color: 'accent',
+                position: 'center'
+              },
+              to: {
+                label: 'VISIT',
+                color: 'primary',
+                route: {
+                  path: `/work/${work._id.toString()}`
+                }
+              }
+            }
+          )
+        };
+      }
+
+      await this.sendNotificationEmail(
+        {
+          to: email,
+          title: 'Work Confirmed',
+          header: `${theUser} Confirmed Work`,
+          body: `${theUser} has confirmed the work id ${work._id}`,
+          link: `${config.frontEndDomain}/work/${work._id}`,
+          btnMessage: 'View On Site',
+          appNotification,
+          work
+        }
+      );
+    }
+  }
+
+  public async sendCancelWorkEmails(
+    isAdmin: boolean,
+    work: IWork,
+    workUser: IUser
+  ) {
+    const theUser = isAdmin ? 'Admin' : workUser.fullName;
+    const emailUsers = [workUser.email, config.sendGrid.email.alert];
+    for (const email of emailUsers) {
+      let appNotification: any = {};
+
+      if (email === workUser.email) {
+        appNotification = {
+          id: workUser._id.toString(),
+          notification: new Notification(
+            'Work Cancelled',
+            `${theUser} Cancelled Work`,
+            {
+              dotdotdot: {
+                progress: false,
+                color: 'accent',
+                position: 'center'
+              },
+              to: {
+                label: 'VISIT',
+                color: 'primary',
+                route: {
+                  path: `/work/${work._id.toString()}`
+                }
+              }
+            }
+          )
+        };
+      }
+
+      await this.sendNotificationEmail({
+        to: email,
+        title: 'Work Cancelled',
+        header: `${theUser} Cancelled Work`,
+        body: `${theUser} has cancelled work ${work._id}`,
+        link: `${config.frontEndDomain}/work/${work._id}`,
+        btnMessage: 'View On Site',
+        work
+      }
+      );
+    }
   }
 
   public errorHtml(errorMessage: string): string {

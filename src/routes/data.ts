@@ -111,11 +111,11 @@ router.post('/getProfile', isAuthenticated, DataController.getProfile);
 
 router.post('/saveProfile', isAuthenticated, DataController.saveProfile);
 
-router.post('/work/pay', isAuthenticated, DataController.generatePaymentIntent);
+router.post('/work/pay/session', isAuthenticated, DataController.generateSessionPaymentIntent);
+router.get('/work/pay/session/confirm', DataController.confirmSessionPaymentIntent);
 
-router.get('/work/pay/confirm', DataController.confirmPaymentIntent);
-
-router.get('/work/payment/confirm', DataController.confirmPaymentIntent);
+router.post('/work/pay/attached-card', isAuthenticated, DataController.generateAttachedCardPaymentIntent);
+router.get('/work/pay/attached-card/confirm', DataController.confirmAttachedCardPaymentIntent);
 
 router.get('/work/sub/pay/confirm', DataController.confirmSubPaymentIntent);
 

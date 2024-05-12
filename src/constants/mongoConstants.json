@@ -14,7 +14,6 @@
     "IN_USE": "In Use"
   },
   "PAYMENT_STATUS_OPTIONS": {
-    "SOME_COMPLETED": "Some Completed",
     "COMPLETED": "Completed",
     "NA": "N/A",
     "UNSET": "Unset",
