@@ -17,6 +17,7 @@ import config from '../config';
 import { Category } from '../models';
 import { IUser } from '../models/User';
 import { IWork } from '../models/Work';
+import { IWorkerData } from '../models/Worker';
 import NotificationService from './NotificationService';
 
 const sendGridJson = config.sendGrid;
@@ -276,98 +277,124 @@ class EmailService implements IEmailService {
   }
 
   public async sendConfirmWorkEmails(
-    isAdmin: boolean,
     work: IWork,
-    workUser: IUser
+    workUser: IUser,
+    workers?: IWorkerData[]
   ) {
-    const theUser = isAdmin ? 'Admin' : workUser.fullName;
-    const emailUsers = [workUser.email, config.sendGrid.email.alert];
-    for (const email of emailUsers) {
-      let appNotification: any = {};
+    const appNotification: any = {};
+    const names = await Category.getNames(work.categorySlug, work.serviceSlug);
 
-      if (email === workUser.email) {
-        appNotification = {
-          id: workUser._id.toString(),
-          notification: new Notification(
-            'Work Confirmed',
-            `${theUser} Confirmed Work`,
-            {
-              dotdotdot: {
-                progress: false,
-                color: 'accent',
-                position: 'center'
-              },
-              to: {
-                label: 'VISIT',
-                color: 'primary',
-                route: {
-                  path: `/work/${work._id.toString()}`
-                }
-              }
-            }
-          )
-        };
-      }
-
+    if (work.categorySlug === 'classes') {
       await this.sendNotificationEmail(
         {
-          to: email,
-          title: 'Work Confirmed',
-          header: `${theUser} Confirmed Work`,
-          body: `${theUser} has confirmed the work id ${work._id}`,
-          link: `${config.frontEndDomain}/work/${work._id}`,
-          btnMessage: 'View On Site',
-          appNotification,
-          work
+          to: workUser.email,
+          title: `Joined ${names.service} Class!`,
+          header: `You have joined ${names.service} Class`,
+          body: `Welcome to the ${names.service} class! You will be notified via email before each class, and can enter the class through the site on the "My Classes" page`,
+          link: `${config.frontEndDomain}/my-classes`,
+          btnMessage: 'View Classes',
+          appNotification
         }
       );
+      for (const worker of workers) {
+        await this.sendNotificationEmail(
+          {
+            to: worker.email,
+            title: `New Class Member!`,
+            header: `${workUser.fullName} Joined "${names.service}" Class`,
+            body: `${workUser.email} has entered your class. Send them a custom welcome email!`,
+            link: `${config.frontEndDomain}/my-classes`,
+            btnMessage: 'View Classes',
+            appNotification
+          }
+        );
+      }
+    } else {
+      await this.sendNotificationEmail(
+        {
+          to: workUser.email,
+          title: `Purchased ${names.category} - ${names.service}`,
+          header: `Successfully Purchased ${names.category} - ${names.service}`,
+          body: `We will start working on this ASAP!`,
+          link: `${config.frontEndDomain}/work/${work._id}`,
+          btnMessage: 'View Work On Site',
+          appNotification
+        }
+      );
+      for (const worker of workers) {
+        await this.sendNotificationEmail(
+          {
+            to: worker.email,
+            title: 'New Work!',
+            header: `${workUser.fullName} Purchased ${names.category} - ${names.service}`,
+            body: `${workUser.email} has confirmed the work ${names.category} - ${names.service}, ID: ${work._id}`,
+            link: `${config.frontEndDomain}/work/${work._id}`,
+            btnMessage: 'View Work On Site',
+            appNotification
+          }
+        );
+      }
     }
   }
 
   public async sendCancelWorkEmails(
-    isAdmin: boolean,
     work: IWork,
-    workUser: IUser
+    workUser: IUser,
+    workers?: IWorkerData[]
   ) {
-    const theUser = isAdmin ? 'Admin' : workUser.fullName;
-    const emailUsers = [workUser.email, config.sendGrid.email.alert];
-    for (const email of emailUsers) {
-      let appNotification: any = {};
+    const appNotification: any = {};
+    const names = await Category.getNames(work.categorySlug, work.serviceSlug);
 
-      if (email === workUser.email) {
-        appNotification = {
-          id: workUser._id.toString(),
-          notification: new Notification(
-            'Work Cancelled',
-            `${theUser} Cancelled Work`,
-            {
-              dotdotdot: {
-                progress: false,
-                color: 'accent',
-                position: 'center'
-              },
-              to: {
-                label: 'VISIT',
-                color: 'primary',
-                route: {
-                  path: `/work/${work._id.toString()}`
-                }
-              }
-            }
-          )
-        };
-      }
-
-      await this.sendNotificationEmail({
-        to: email,
-        title: 'Work Cancelled',
-        header: `${theUser} Cancelled Work`,
-        body: `${theUser} has cancelled work ${work._id}`,
-        link: `${config.frontEndDomain}/work/${work._id}`,
-        btnMessage: 'View On Site',
-        work
-      }
+    if (work.categorySlug === 'classes') {
+      await this.sendNotificationEmail(
+        {
+          to: workUser.email,
+          title: `Dropped ${names.service} Class!`,
+          header: `You have dropped ${names.service} Class`,
+          body: `If you ever feel like coming back you know where to go!`,
+          link: `${config.frontEndDomain}/${work.categorySlug}/${work.serviceSlug}`,
+          btnMessage: 'View Class',
+          appNotification
+        }
       );
+      for (const worker of workers) {
+        await this.sendNotificationEmail(
+          {
+            to: worker.email,
+            title: `Member Dropped`,
+            header: `${workUser.fullName} Dropped "${names.service}" Class`,
+            body: `${workUser.fullName} has decided to drop your class.`,
+            link: `${config.frontEndDomain}/`,
+            btnMessage: 'View Site',
+            appNotification
+          }
+        );
+      }
+    } else {
+      await this.sendNotificationEmail(
+        {
+          to: workUser.email,
+          title: `Cancelled ${names.category} - ${names.service}`,
+          header: `Successfully Cancelled ${names.category} - ${names.service}`,
+          body: `If you ever feel like working with use again you know where to go!`,
+          link: `${config.frontEndDomain}/`,
+          btnMessage: 'View Site',
+          appNotification
+        }
+      );
+      for (const worker of workers) {
+        await this.sendNotificationEmail(
+          {
+            to: worker.email,
+            title: 'Work Cancelled',
+            header: `${workUser.fullName} Cancelled ${names.category} - ${names.service}`,
+            body: `${workUser.email} has cancelled the work ${names.category} - ${names.service}, ID: ${work._id}`,
+            link: `${config.frontEndDomain}/work/${work._id}`,
+            btnMessage: 'View Work On Site',
+            appNotification
+          }
+        );
+      }
     }
   }
 

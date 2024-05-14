@@ -4,6 +4,7 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import _ from 'lodash';
 import { DateTime } from 'luxon';
 import config from '../config';
 import CATEGORY_JSON from '../configs/db/categories.json';
@@ -525,9 +526,9 @@ class DatabaseSeeder extends Process {
     }
 
     await Worker.insertMany(workers);
-    const allWorkers = await Worker.find({});
+    const classWorkers = await Worker.find({ categorySlug: 'classes' });
 
-    for (const worker of allWorkers) {
+    for (const worker of classWorkers) {
       // Link to classes
       if (worker.categorySlug === 'classes') {
         await Classes.updateOne(
@@ -536,6 +537,154 @@ class DatabaseSeeder extends Process {
         );
       }
     }
+
+    // Add myself to all my work related work
+    const myUser = await User.findOne({ email: 'sebastiangadzinskiwork@gmail.com' });
+    const softwareWorker: any = {
+      userId: myUser._id,
+      categorySlug: 'software',
+      thumbnailImg: 'https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/card.png',
+      summary: [
+        {
+          title: 'Location',
+          text: 'Ontario, Canada.'
+        },
+        {
+          title: 'Hobbies',
+          text: 'Passionate about software development, fitness, and vlogging.',
+          icon: {
+            name: 'code',
+            color: 'accent'
+          }
+        },
+        {
+          title: 'Experience',
+          text: 'I have been developing software for over 8 years!',
+          badge: {
+            label: '8y',
+            color: 'accent'
+          }
+        },
+      ],
+      socials: {
+        instagram: 'https://www.instagram.com/daily.life.of.sebjo/',
+        youtube: 'https://www.youtube.com/channel/UCxjCGF7u1wTXjjDsKHe7NgA'
+      }
+    };
+    const designWorker: any = {
+      userId: myUser._id,
+      categorySlug: 'design',
+      thumbnailImg: 'https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/card.png',
+      summary: [
+        {
+          title: 'Location',
+          text: 'Ontario, Canada.'
+        },
+        {
+          title: 'Hobbies',
+          text: 'Passionate about design, fitness, and vlogging.',
+          icon: {
+            name: 'design_services',
+            color: 'accent'
+          }
+        },
+        {
+          title: 'Experience',
+          text: 'I have been designing for over 5 years!',
+          badge: {
+            label: '8y',
+            color: 'accent'
+          }
+        },
+      ],
+      socials: {
+        instagram: 'https://www.instagram.com/daily.life.of.sebjo/',
+        youtube: 'https://www.youtube.com/channel/UCxjCGF7u1wTXjjDsKHe7NgA'
+      }
+    };
+    const photoWorker: any = {
+      userId: myUser._id,
+      categorySlug: 'photography',
+      thumbnailImg: 'https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/card.png',
+      summary: [
+        {
+          title: 'Location',
+          text: 'Ontario, Canada.'
+        },
+        {
+          title: 'Hobbies',
+          text: 'Passionate about photography, fitness, and vlogging.',
+          icon: {
+            name: 'photo',
+            color: 'accent'
+          }
+        },
+        {
+          title: 'Experience',
+          text: 'I started out vlogging my life with my friend as we went to British Colombia For Work, now I vlog and do photoshoots!',
+          badge: {
+            label: '#VlogLife',
+            color: 'accent'
+          }
+        },
+      ],
+      socials: {
+        instagram: 'https://www.instagram.com/daily.life.of.sebjo/',
+        youtube: 'https://www.youtube.com/channel/UCxjCGF7u1wTXjjDsKHe7NgA'
+      }
+    };
+    const videoWorker: any = {
+      userId: myUser._id,
+      categorySlug: 'videography',
+      thumbnailImg: 'https://gadzy-work.com/images/instructors/sebastiangadzinskiwork@gmail.com/card.png',
+      summary: [
+        {
+          title: 'Location',
+          text: 'Ontario, Canada.'
+        },
+        {
+          title: 'Hobbies',
+          text: 'Passionate about photography, fitness, and vlogging.',
+          icon: {
+            name: 'photo',
+            color: 'accent'
+          }
+        },
+        {
+          title: 'Experience',
+          text: 'I started out vlogging my life with my friend as we went to British Colombia For Work, now I vlog and do photoshoots!',
+          badge: {
+            label: '#VlogLife',
+            color: 'accent'
+          }
+        },
+      ],
+      socials: {
+        instagram: 'https://www.instagram.com/daily.life.of.sebjo/',
+        youtube: 'https://www.youtube.com/channel/UCxjCGF7u1wTXjjDsKHe7NgA'
+      }
+    };
+
+    const myWorkers = [];
+    for (const myWorker of [softwareWorker, designWorker, photoWorker, videoWorker]) {
+      const categoryData = await Category.findOne(
+        {
+          slug: myWorker.categorySlug
+        },
+        { 'services.slug': 1, '_id': 0 }
+      );
+
+      for (const serviceData of categoryData.services) {
+        const copyOfWorker = _.cloneDeep(myWorker);
+        copyOfWorker.updatedAt = currentDate;
+        copyOfWorker.createdAt = currentDate;
+        copyOfWorker.updatedBy = modifier;
+        copyOfWorker.createdBy = modifier;
+        copyOfWorker.serviceSlug = serviceData.slug;
+        myWorkers.push(copyOfWorker);
+      }
+    }
+    await Worker.insertMany(myWorkers);
 
     console.log('Workers inserted.');
   }

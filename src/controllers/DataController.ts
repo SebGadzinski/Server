@@ -749,7 +749,10 @@ class DataController {
       if (!req?.params?.workId) throw new Error('Work ID is required');
 
       const work = await Work.findOne({ _id: req?.params.workId },
-        { userId: 1, subscription: 1, cancellationPaymentStatus: 1, cancellationPayment: 1 });
+        {
+          categorySlug: 1, serviceSlug: 1, userId: 1, subscription: 1,
+          cancellationPaymentStatus: 1, cancellationPayment: 1
+        });
 
       // if not admin and not this user send an error
       if (
@@ -771,6 +774,10 @@ class DataController {
 
       work.cancellationPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
       await work.save();
+
+      const workUser = await User.findById(work.userId);
+      const workers = await Worker.getWorkers(work.categorySlug, work.serviceSlug);
+      await EmailService.sendCancelWorkEmails(work, workUser, workers);
 
       res.send(new Result({
         success: true
@@ -971,7 +978,8 @@ class DataController {
       work.initialPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
       work.save();
 
-      await EmailService.sendConfirmWorkEmails(isAdmin, work, workUser);
+      const workers = await Worker.getWorkers(work.categorySlug, work.serviceSlug);
+      await EmailService.sendConfirmWorkEmails(work, workUser, workers);
 
       res.send(new Result({ success: true }));
     } catch (err) {
@@ -1164,7 +1172,8 @@ class DataController {
       work.cancellationPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
       work.save();
 
-      await EmailService.sendCancelWorkEmails(isAdmin, work, workUser);
+      const workers = await Worker.getWorkers(work.categorySlug, work.serviceSlug);
+      await EmailService.sendCancelWorkEmails(work, workUser, workers);
 
       res.send(new Result({ success: true }));
     } catch (err) {

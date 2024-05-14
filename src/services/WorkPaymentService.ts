@@ -5,7 +5,7 @@
 
 import mongoose from 'mongoose';
 import config, { c } from '../config';
-import { Category, User, Work } from '../models';
+import { Category, User, Work, Worker } from '../models';
 import { IUser } from '../models/User';
 import { IPaymentHistory, IWork } from '../models/Work';
 import EmailService from './EmailService';
@@ -160,7 +160,8 @@ class WorkPaymentService {
                 price: `${work.initialPayment.toFixed(2)} CAD`
             });
 
-            await EmailService.sendConfirmWorkEmails(false, work, user);
+            const workers = await Worker.getWorkers(work.categorySlug, work.serviceSlug);
+            await EmailService.sendConfirmWorkEmails(work, user, workers);
         } else if (
             paymentHistory.type === c.PAYMENT_HISTORY_TYPE.PAYMENT_ITEM &&
             paymentHistory?.paymentItemId
@@ -203,7 +204,8 @@ class WorkPaymentService {
                 sub.dateDisabled = new Date();
             }
 
-            await EmailService.sendCancelWorkEmails(false, work, user);
+            const workers = await Worker.getWorkers(work.categorySlug, work.serviceSlug);
+            await EmailService.sendCancelWorkEmails(work, user, workers);
         } else {
             throw new Error(`Type ${paymentHistory.type} not found`);
         }

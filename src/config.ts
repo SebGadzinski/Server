@@ -61,6 +61,7 @@ const config = {
   acceptingWork: process.env.ACCEPTING_WORK,
   sslKeyPath: process.env.SSL_KEY_PATH,
   sslCertPath: process.env.SSL_CERT_PATH,
+  appNotificationStatus: process.env.APP_NOTIFICATIONS_STATUS
 };
 
 const internalIpV4 = ipService.getInternalIPv4();

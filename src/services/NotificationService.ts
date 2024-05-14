@@ -50,6 +50,8 @@ class NotificationService {
     notification: Notification
   ): Promise<string> {
     try {
+      if (config.appNotificationStatus !== 'sending') return;
+
       const tokenDoc = await Token.findOne({
         referenceId,
         reason: 'notification'
@@ -97,6 +99,8 @@ class NotificationService {
     notification: Notification
   ): Promise<BatchResponse> {
     try {
+      if (config.appNotificationStatus !== 'sending') return;
+
       const result = await Token.find({
         referenceId: { $in: referenceIds },
         reason: 'notification'

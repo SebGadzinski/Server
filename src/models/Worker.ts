@@ -2,6 +2,7 @@
  * @author Sebastian Gadzinski
  */
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import { transform } from '../utils/transform';
 
 export interface Social {
     instagram?: string;
@@ -31,9 +32,18 @@ export interface IWorker extends Document {
     templates: Schema.Types.ObjectId[];
     summary: Summary[];
     socials?: Social;
+    createdBy: string;
+    updatedBy: string;
 }
 
-interface IWorkerModel extends Model<IWorker> { }
+export interface IWorkerData {
+    name: string;
+    email: string;
+}
+
+interface IWorkerModel extends Model<IWorker> {
+    getWorkers(categorySlug: string, serviceSlug: string): Promise<IWorkerData[]>;
+}
 
 const summarySchema = new Schema({
     title: String,
@@ -57,7 +67,7 @@ const summarySchema = new Schema({
             }
         },
         required: false
-    }
+    },
 }, { _id: false });
 
 const socialSchema = new Schema({
@@ -77,10 +87,45 @@ const WorkerSchema: Schema = new mongoose.Schema(
             type: [Schema.Types.ObjectId],
             required: true
         },
-        socials: { type: socialSchema, required: false }
+        socials: { type: socialSchema, required: false },
+        createdBy: { type: String, required: true },
+        updatedBy: { type: String, required: true }
     },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: { transform },
+        statics: {
+            async getWorkers(categorySlug: string, serviceSlug: string): Promise<IWorkerData[]> {
+                const data = await Worker.aggregate([
+                    {
+                        $match: {
+                            categorySlug,
+                            serviceSlug
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'user'
+                        }
+                    },
+                    {
+                        $unwind: '$user'
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            email: '$user.email',
+                            name: '$user.fullName'
+                        }
+                    }
+                ]);
+
+                return data;
+            }
+        }
     }
 );
 
