@@ -622,6 +622,30 @@ class DataController {
         }
       ]).exec();
 
+      let workClasses: any = [];
+      if (req?.user?.data?.roles?.includes('worker')) {
+        const workerIds = (await Worker.find({ categorySlug: 'classes', userId: req.user.data.id },
+          { _id: 1 }).lean()).map((x) => x._id);
+        workClasses = await Classes.aggregate([
+          {
+            $match: {
+              instructorIds: { $in: workerIds }
+            }
+          },
+          {
+            $project: {
+              myClass: { $literal: true },
+              duration: 1,
+              serviceSlug: 1,
+              classType: c.CLASS_TYPE.PERPETUAL,
+              canJoin: 1
+            }
+          }
+        ]);
+      }
+
+      classes.push(...workClasses);
+
       if (classes) {
         const setOfServiceSlugs = new Set();
         for (const aClass of classes) {
