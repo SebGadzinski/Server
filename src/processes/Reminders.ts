@@ -117,7 +117,7 @@ class Reminders extends CronProcess {
                         const title = `Upcoming ${service.name} class`;
                         const header = `Don't Miss Your Next Class!`;
                         const body = `Just a friendly reminder that your next class is coming up soon. Make sure you're prepared and on time to make the most of it.`;
-                        const route = `/work?id=${user.workId}`;
+                        const route = `/my-classes`;
                         const link = `${config.frontEndDomain}${route}`; // Adjust the link as needed
                         const btnMessage = `Go To Class`;
 

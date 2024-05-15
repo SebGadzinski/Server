@@ -326,9 +326,6 @@ const WorkSchema: Schema = new mongoose.Schema(
 
         workData[0].payment.subscription.isEnabled = SubscriptionService.isEnabled(workData[0].payment.subscription);
 
-        workData[0].payment.subscription.paymentHistory =
-          StripeService.getSubPaymentHistory(workData[0].payment.subscription.paymentHistory, workData[0].categorySlug);
-
         try {
           workData[0].payment.subscription.last4Digits = await StripeService.getLast4DigitsOfCard(
             workData[0].categorySlug, workData[0].payment.subscription.paymentMethodId);

@@ -130,7 +130,7 @@ class StripeService {
             const newPaymentHistory: any = {
                 _id: new mongoose.Types.ObjectId(),
                 status: c.PAYMENT_STATUS_OPTIONS.NEW,
-                paymentIntentId: 'new'
+                paymentIntentId: 'new',
             };
 
             subscription.paymentHistory.push(newPaymentHistory);
@@ -334,6 +334,7 @@ class StripeService {
         if (paymentHistory && paymentHistory.length > 0) {
             for (const payment of paymentHistory) {
                 const data = await stripeAccount.paymentIntents.retrieve(payment.paymentIntentId);
+                console.log(data);
                 if (data.status === 'succeeded') {
                     const last4Digits = await this.getLast4DigitsOfCard(categorySlug, data.payment_method);
                     result.push({
