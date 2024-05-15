@@ -334,12 +334,11 @@ class StripeService {
         if (paymentHistory && paymentHistory.length > 0) {
             for (const payment of paymentHistory) {
                 const data = await stripeAccount.paymentIntents.retrieve(payment.paymentIntentId);
-                console.log(data);
                 if (data.status === 'succeeded') {
                     const last4Digits = await this.getLast4DigitsOfCard(categorySlug, data.payment_method);
                     result.push({
                         id: payment._id,
-                        date: new Date(data.created),
+                        date: new Date(data.created * 1000),
                         cost: Number((data.amount / 100).toFixed(2)),
                         last4Digits
                     });
