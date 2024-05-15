@@ -549,7 +549,7 @@ class DataController {
 
   public async getClassesPageData(req: any, res: any) {
     try {
-      const classes = await Work.aggregate([
+      let classes = await Work.aggregate([
         {
           $match: {
             $expr: {
@@ -644,6 +644,7 @@ class DataController {
         ]);
       }
 
+      classes = classes.filter((x) => !workClasses.some((y) => y.serviceSlug === x.serviceSlug));
       classes.push(...workClasses);
 
       if (classes) {
