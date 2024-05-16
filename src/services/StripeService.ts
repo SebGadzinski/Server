@@ -205,9 +205,9 @@ class StripeService {
         }
 
         try {
-            const customer = await this.findStripeCustomer(user.email, stripeAccount);
+            let customer = await this.findStripeCustomer(user.email, stripeAccount);
             if (!customer) {
-                throw new Error('Customer not found');
+                customer = await this.createCustomer(user, work.categorySlug);
             }
 
             // Validate Subscription exists
