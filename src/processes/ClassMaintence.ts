@@ -74,7 +74,7 @@ class ClassMaintence extends CronProcess {
                             ).exec();
 
                             const meeting = await ZoomMeetingService
-                                .createMeeting({
+                                .createMeeting(instructors[0].email[0], {
                                     topic: `${service.name} Class`,
                                     startDate: meetingTime.toJSDate(),
                                     duration: classToUpdate.duration,
@@ -190,4 +190,4 @@ class ClassMaintence extends CronProcess {
 }
 
 const classMaintence = new ClassMaintence();
-classMaintence.run();
+classMaintence.test();

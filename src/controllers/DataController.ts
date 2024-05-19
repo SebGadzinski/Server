@@ -24,6 +24,7 @@ import WorkPaymentService from '../services/WorkPaymentService';
 import ZoomMeetingService from '../services/ZoomMeetingService';
 
 const security = SecurityService.getInstance();
+const meetingZoomEmailAccount = `sebastiangadzinskiwork@gmail.com`;
 
 class DataController {
   private static readonly publicCollections = {
@@ -417,7 +418,8 @@ class DataController {
         endDate
       });
 
-      const { join_url, meetingId, password } = await ZoomMeetingService.createMeeting({
+      // All meetings go to me for now
+      const { join_url, meetingId, password } = await ZoomMeetingService.createMeeting(meetingZoomEmailAccount, {
         topic: `${req?.user.data.email}: ${categorySlug} - ${serviceSlug}`,
         startDate,
         duration: 30,
@@ -1185,7 +1187,7 @@ class DataController {
       try {
         const meeting = await Meetings.findOne({ _id: work.meetingId });
         await Meetings.deleteOne({ _id: work.meetingId });
-        await ZoomMeetingService.cancelMeeting(meeting.zoomMeetingId);
+        await ZoomMeetingService.cancelMeeting(meetingZoomEmailAccount, meeting.zoomMeetingId);
       } catch (err) {
         console.log(`Issue cancelling meeting for work: ${work._id}`);
       }
