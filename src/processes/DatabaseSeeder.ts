@@ -29,11 +29,12 @@ console.log = (...args: any[]) => {
 class DatabaseSeeder extends Process {
 
   // Used in multiple functions
+  // Duration is 30 min for now using basic plan on zoom
   private readonly classInfo = {
     'figma': {
       instructorIds: [],
       occupancyCap: 50,
-      duration: 60,
+      duration: 30,
       comeIn: false,
       meetingTimes: [
         // Tuesday 6
@@ -59,7 +60,7 @@ class DatabaseSeeder extends Process {
     'make-web-app': {
       instructorIds: [],
       occupancyCap: 50,
-      duration: 60,
+      duration: 30,
       comeIn: false,
       meetingTimes: [
         // Tuesday 8pm
