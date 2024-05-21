@@ -644,6 +644,12 @@ class DataController {
             }
           }
         ]);
+        const studentPromises = workClasses.map(async (myClass) => {
+          const students = await Classes.getStudents(myClass.serviceSlug);
+          myClass.students = students;
+        });
+
+        await Promise.all(studentPromises);
       }
 
       classes.push(...workClasses);
@@ -709,13 +715,23 @@ class DataController {
         const now = DateTime.local();
         for (const aClass of classes) {
           if (!aClass.canJoin) {
+            let closestMeetingTime = null;
+            let smallestDiff = Infinity;
+
             for (const t of meetingTimes[aClass.serviceSlug]) {
-              // t is a date representing a date and time during the week
               const { meetingTime, diff } = Classes
                 .meetingTimeDifference(now, aClass.duration,
                   t, 'seconds');
-              aClass.nextClass = meetingTime.toJSDate();
-              aClass.secondsTillClass = diff;
+
+              if (diff > 0 && diff < smallestDiff) {
+                smallestDiff = diff;
+                closestMeetingTime = meetingTime;
+              }
+            }
+
+            if (closestMeetingTime) {
+              aClass.nextClass = closestMeetingTime.toJSDate();
+              aClass.secondsTillClass = smallestDiff;
             }
           }
         }
