@@ -36,7 +36,7 @@
     "test:intergration": "node -r dotenv/config -r ts-node/register tests/intergration/testrunner.ts dotenv_config_path=./.env.test --exit",
     "test:intergration-server-on": "cross-env dotenv_config_path=./.env.test mocha --timeout 0 -r dotenv/config -r ts-node/register tests/intergration/**/*.spec.ts --exit",
     "test:unit": "cross-env dotenv_config_path=./.env.test mocha --timeout 0 -r dotenv/config -r ts-node/register tests/unit/**/*.spec.ts --exit",
-    "test:single": "cross-env dotenv_config_path=./.env.test mocha --timeout 0 -r dotenv/config -r ts-node/register tests/unit/services/email.spec.ts --exit",
+    "test:single": "cross-env dotenv_config_path=./.env.test mocha --timeout 0 -r dotenv/config -r ts-node/register tests/scripts/updateCategoryServiceMeeting.spec.ts --exit",
     "build": "npm run lint && tsc",
     "lint": "tslint src/**/*.ts"
   },

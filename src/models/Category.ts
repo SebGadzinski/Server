@@ -23,7 +23,7 @@ export interface ICategory extends Document {
       details: [{ header: string; info: string }];
       faqs: [{ question: string; answer: string }];
       bookMeetingIntervals: IBookMeetingInterval[];
-      meetingTimes?: [Date];
+      meetingTimes?: Date[];
     }
   ];
   thumbnailImg: string;
