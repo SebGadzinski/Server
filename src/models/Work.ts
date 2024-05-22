@@ -6,7 +6,7 @@ import { c } from '../config';
 import StripeService from '../services/StripeService';
 import SubscriptionService from '../services/SubscriptionService';
 import { transform } from '../utils/transform';
-import Worker from './Worker';
+import { Config, Worker } from './';
 
 export interface IPaymentHistory {
   _id: Schema.Types.ObjectId;
@@ -87,6 +87,7 @@ export interface IWork extends Document {
 interface IWorkModel extends Model<IWork> {
   getViewComponent(workId: string): Promise<any>;
   getMoreSubPaymentHistory(workId: string, indexSlip: number, amount: number): Promise<any>;
+  acceptingWork(categorySlug?: string, serviceSlug?: string): Promise<void>;
 }
 
 const subscriptionSchema = new Schema({
@@ -400,6 +401,24 @@ const WorkSchema: Schema = new mongoose.Schema(
         ]);
 
         return result[0] ? result[0].paymentHistory : [];
+      },
+      async acceptingWork(categorySlug?: string, serviceSlug?: string) {
+        const acceptingWork = await Config.findOne({ name: 'acceptingWork' });
+        if (!acceptingWork || !acceptingWork?.value) {
+          throw new Error('Not Accepting Work');
+        }
+
+        if (categorySlug) {
+          if (!acceptingWork.value[categorySlug]
+            || !acceptingWork.value[categorySlug]?.accepting) {
+            throw new Error('Not Accepting Work');
+          }
+          if (serviceSlug && acceptingWork.value[categorySlug]?.noService) {
+            if (acceptingWork.value[categorySlug]?.noService.includes(serviceSlug)) {
+              throw new Error('Not Accepting Work');
+            }
+          }
+        }
       }
     }
   }

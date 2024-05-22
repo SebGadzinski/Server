@@ -57,6 +57,11 @@ class SecurityService {
     await ipData.save();
   }
 
+  public async accessDenied(ip: string): Promise<void> {
+    await this.checkAndBlockIP(ip);
+    throw new Error('Access Denied');
+  }
+
   public async isIPBlocked(ipAddress: string): Promise<boolean> {
     ipAddress = this.formatIPAddress(ipAddress); // Format IP address
     const ipData = await IPData.findOne({ ipAddress });
@@ -108,4 +113,4 @@ class SecurityService {
   }
 }
 
-export default SecurityService;
+export default SecurityService.getInstance();

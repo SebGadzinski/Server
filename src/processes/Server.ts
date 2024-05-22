@@ -12,11 +12,11 @@ import util from 'util';
 
 import config from '../config';
 import { IPSecurity } from '../middleware/securityMiddleware';
-import appRoutes from '../routes/app';
-import authenticationRoutes from '../routes/authentication';
-import dataRoutes from '../routes/data';
-import userRoutes from '../routes/user';
-import vmRoutes from '../routes/vm';
+import {
+  appRoutes, authenticationRoutes,
+  browseRoutes, dataRoutes, meetingRoutes,
+  userRoutes, vmRoutes
+} from '../routes';
 import ipService from '../services/IPService';
 import Process from './_Process';
 
@@ -109,6 +109,8 @@ class Server extends Process {
     this.app.use('/api/auth', authenticationRoutes);
     this.app.use('/api/app', appRoutes);
     this.app.use('/api/data', dataRoutes);
+    this.app.use('/api/browse', browseRoutes);
+    this.app.use('/api/meeting', meetingRoutes);
     this.app.use('/api/vm', vmRoutes);
 
     if (httpsOptions) {
