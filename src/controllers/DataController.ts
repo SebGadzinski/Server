@@ -127,8 +127,6 @@ class DataController {
     }
   }
 
-
-
   public async getUserPageData(req: any, res: any) {
     try {
       const users = await User.aggregate([

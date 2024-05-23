@@ -9,3 +9,4 @@ export { default as dataRoutes } from './data';
 export { default as meetingRoutes } from './meeting';
 export { default as userRoutes } from './user';
 export { default as vmRoutes } from './vm';
+export { default as workRoutes } from './work';

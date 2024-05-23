@@ -229,7 +229,7 @@ class StripeService {
                 customer: customer.id,
                 payment_method: paymentMethod.id,
                 confirm: true,
-                return_url: `${config.domain}/api/data/work/pay/attached-card/confirm?id=${details.newPaymentHistory._id}`,
+                return_url: `${config.domain}/api/work/pay/attached-card/confirm?id=${details.newPaymentHistory._id}`,
                 description: `${details.name}`
             });
 

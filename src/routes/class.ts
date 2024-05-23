@@ -22,7 +22,6 @@ router.post(
     ClassController.useSingleSession
 );
 
-
 router.get('/getClassesPageData', isAuthenticated, ClassController.getClassesPageData);
 
 router.get('/classes/join/:workId', isAuthenticated, ClassController.getJoinClassLink);

@@ -166,9 +166,9 @@ class WorkController {
 
     public async getWorkConfirmationPageData(req: any, res: any) {
         try {
-            if (!req?.body?.workId) throw new Error('Work ID is required');
+            if (!req?.params?.id) throw new Error('Work ID is required');
 
-            const work = await Work.getViewComponent(req?.body.workId);
+            const work = await Work.getViewComponent(req?.params.id);
 
             // if not admin and not this user send an error
             if (
@@ -237,9 +237,9 @@ class WorkController {
 
     public async getWorkCancelPageData(req: any, res: any) {
         try {
-            if (!req?.body?.workId) throw new Error('Work ID is required');
+            if (!req?.params?.id) throw new Error('Work ID is required');
 
-            const work = await Work.getViewComponent(req?.body.workId);
+            const work = await Work.getViewComponent(req?.params?.id);
 
             // if not admin and not this user send a error
             if (
@@ -303,10 +303,6 @@ class WorkController {
 
     public async getWorkEditorPageData(req: any, res: any) {
         try {
-            const isNew = req?.body?.isNew;
-
-            if (!isNew && !req?.body?.workId) throw new Error('Work ID is required');
-
             // Have to be a editor to be here
             if (!req?.user?.data.roles.includes('admin')) {
                 await SecurityService.accessDenied(req.ip);
@@ -340,7 +336,7 @@ class WorkController {
                 subscriptionIntervalOptions: _.values(c.SUBSCRIPTION_INTERVAL_OPTIONS),
             };
 
-            data.work = isNew
+            data.work = !req?.params?.id
                 ?
                 {
                     user: {
@@ -372,7 +368,7 @@ class WorkController {
                     initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.NA,
                     cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.NA,
                 }
-                : await Work.getViewComponent(req?.body.workId);
+                : await Work.getViewComponent(req?.params?.id);
 
             res.send(new Result({ data, success: true }));
         } catch (err) {
@@ -453,7 +449,10 @@ class WorkController {
 
             // Add workers
             if (workers) {
-                const workerIds = (await User.find({ email: { $in: workers } }, { _id: 1 })).map((x) => x._id);
+                const workerIds = (await User.find(
+                    { email: { $in: workers } },
+                    { _id: 1 }
+                )).map((x) => x._id);
                 work.workerIds = workerIds;
             } else {
                 work.workerIds = undefined;
@@ -496,7 +495,8 @@ class WorkController {
             if (subIndex < 0 && payment.subscription.isEnabled && payment.subscription.payment > 0) {
                 // If the next payment is null, make it from today using the interval
                 if (!newSubscription.nextPayment) {
-                    newSubscription.nextPayment = SubscriptionService.addIntervalToDate(curDate, newSubscription.interval);
+                    newSubscription.nextPayment = SubscriptionService.addIntervalToDate(
+                        curDate, newSubscription.interval);
                 }
                 newSubscription.createdDate = curDate;
                 newSubscription.dateActivated = curDate;

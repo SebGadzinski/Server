@@ -102,7 +102,8 @@ class WorkPaymentController {
 
     public async confirmSessionPaymentIntent(req: any, res: any) {
         try {
-            const { work, paymentHistory, workUser } = await WorkPaymentService.getConfirmationPaymentDetails(req?.query?.id);
+            const { work, paymentHistory, workUser } = await WorkPaymentService
+                .getConfirmationPaymentDetails(req?.query?.id);
 
             const checkoutSession = await StripeService.getCheckoutSession(work.categorySlug, paymentHistory.sessionId);
 

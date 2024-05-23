@@ -11,20 +11,6 @@ import {
 } from '../services';
 
 class WorkTemplateController {
-    public async getWorkTemplates(req: any, res: any) {
-        try {
-            const { category, service } = req.body;
-            const data: any[] = await WorkTemplate.find({ category, service }).lean();
-
-            res.send(new Result({
-                data, success: true
-            }));
-        } catch (err) {
-            res.send(new Result({ message: err.message, success: false }));
-        }
-    }
-
-    // TODO: make this work for objects w arrats
 
     public async saveWorkTemplate(req: any, res: any) {
         try {
@@ -125,9 +111,6 @@ class WorkTemplateController {
 
     public async getWorkTemplateEditorPageData(req: any, res: any) {
         try {
-            if (!req?.body?.isNew && !req?.body?.workTemplateId) {
-                throw new Error('No Params');
-            }
             // Have to be a editor to be here
             if (!req?.user?.data.roles.includes('admin')) {
                 await SecurityService.accessDenied(req.ip);
@@ -155,30 +138,26 @@ class WorkTemplateController {
                 work: {}
             };
 
-            if (!req?.body?.workTemplateId) {
-                if (req?.body?.isNew) {
-                    data.work = {
-                        name: 'new_template',
-                        category: data.categoryOptions[0],
-                        service: data.servicesOptions[data.categoryOptions[0]][0][0],
-                        workItems: [],
-                        paymentItems: [],
-                        subscription: {
-                            payment: 0,
-                            interval: c.SUBSCRIPTION_INTERVAL_OPTIONS.NA
-                        },
-                        initialPayment: 0,
-                        initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
-                        cancellationPayment: 0,
-                        classType: data.categoryOptions[0] === 'Classes' ? c.CLASS_TYPE.NA : undefined,
-                        cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
-                        status: c.WORK_STATUS_OPTIONS.NA
-                    };
-                } else {
-                    throw new Error('Work ID is required');
-                }
+            if (!req?.params?.id) {
+                data.work = {
+                    name: 'new_template',
+                    category: data.categoryOptions[0],
+                    service: data.servicesOptions[data.categoryOptions[0]][0][0],
+                    workItems: [],
+                    paymentItems: [],
+                    subscription: {
+                        payment: 0,
+                        interval: c.SUBSCRIPTION_INTERVAL_OPTIONS.NA
+                    },
+                    initialPayment: 0,
+                    initialPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+                    cancellationPayment: 0,
+                    classType: data.categoryOptions[0] === 'Classes' ? c.CLASS_TYPE.NA : undefined,
+                    cancellationPaymentStatus: c.PAYMENT_STATUS_OPTIONS.UNSET,
+                    status: c.WORK_STATUS_OPTIONS.NA
+                };
             } else {
-                data.work = await WorkTemplate.findById(req.body.workTemplateId).lean();
+                data.work = await WorkTemplate.findById(req.params.id).lean();
             }
 
             res.send(new Result({ data, success: true }));

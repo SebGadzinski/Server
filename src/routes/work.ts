@@ -12,94 +12,98 @@ import {
 const router = express.Router({});
 
 // General Routes
-router.get('/getWorkPageData', isAuthenticated, WorkController.getWorkPageData);
-router.post(
-    '/getWorkConfirmationPageData',
+router.get('/', isAuthenticated, WorkController.getWorkPageData);
+
+router.get(
+    '/confirm/:id',
     isAuthenticated,
     WorkController.getWorkConfirmationPageData
 );
-
-router.post('/work/confirm/:id', isAuthenticated, WorkController.confirmWork);
-router.post('/work/cancel/:id', isAuthenticated, WorkController.cancelWork);
+router.post('/confirm/:id', isAuthenticated, WorkController.confirmWork);
 
 router.post(
-    '/getWorkCancelPageData',
+    '/cancel/:id',
     isAuthenticated,
     WorkController.getWorkCancelPageData
 );
-router.get(
-    '/work/:id',
-    isAuthenticated,
-    WorkController.getWorkComponent
-);
+router.post('/cancel/:id', isAuthenticated, WorkController.cancelWork);
 
-router.post(
-    '/getWorkEditorPageData',
+router.get(
+    '/create',
     isAuthenticated,
+    hasRole('admin'),
     WorkController.getWorkEditorPageData
 );
-
+router.get(
+    '/edit/:id',
+    isAuthenticated,
+    hasRole('admin'),
+    WorkController.getWorkEditorPageData
+);
 router.post(
-    '/work/upsert',
+    '/upsert',
     isAuthenticated,
     hasRole('admin'),
     WorkController.upsertWork
 );
 
 // Payment Routes
-router.post('/work/pay/session', isAuthenticated, WorkPaymentController.generateSessionPaymentIntent);
-router.get('/work/pay/session/confirm', WorkPaymentController.confirmSessionPaymentIntent);
+router.post('/pay/session', isAuthenticated, WorkPaymentController.generateSessionPaymentIntent);
+router.get('/pay/session/confirm', WorkPaymentController.confirmSessionPaymentIntent);
+router.post('/pay/attached-card', isAuthenticated, WorkPaymentController.generateAttachedCardPaymentIntent);
+router.get('/pay/attached-card/confirm', WorkPaymentController.confirmAttachedCardPaymentIntent);
 
-router.post('/work/pay/attached-card', isAuthenticated, WorkPaymentController.generateAttachedCardPaymentIntent);
-router.get('/work/pay/attached-card/confirm', WorkPaymentController.confirmAttachedCardPaymentIntent);
+router.get('/sub/pay/confirm', WorkPaymentController.confirmSubPaymentIntent);
+router.post('/sub/paymentMethod/add', isAuthenticated, WorkPaymentController.addCardToSubscription);
+router.delete('/sub/paymentMethod/delete/:id', isAuthenticated, WorkPaymentController.deleteCard);
+router.post('/sub/paymentHistory', isAuthenticated, WorkPaymentController.getSubPaymentHistory);
 
-router.get('/work/sub/pay/confirm', WorkPaymentController.confirmSubPaymentIntent);
-
-router.post('/work/sub/paymentHistory', isAuthenticated, WorkPaymentController.getSubPaymentHistory);
-
-router.post('/work/sub/paymentMethod/add', isAuthenticated, WorkPaymentController.addCardToSubscription);
-
-router.delete('/work/sub/paymentMethod/delete/:id', isAuthenticated, WorkPaymentController.deleteCard);
 router.get(
-    '/work/receipt/:id',
+    '/receipt/:id',
     isAuthenticated,
     WorkPaymentController.generatePaymentReceipt
 );
 
 // Template Routes
-router.post(
-    '/work/template',
-    WorkTemplateController.getWorkTemplateComponent
-);
-router.post(
-    '/work/template/find',
-    isAuthenticated,
-    hasRole('admin'),
-    WorkTemplateController.getWorkTemplates
-);
-router.post(
-    '/work/template/save',
-    isAuthenticated,
-    hasRole('admin'),
-    WorkTemplateController.saveWorkTemplate
-);
 router.get(
-    '/getWorkTemplatePageData',
+    '/template',
     isAuthenticated,
     hasRole('admin'),
     WorkTemplateController.getWorkTemplatePageData
 );
 router.post(
-    '/getWorkTemplateEditorPageData',
+    '/template',
+    WorkTemplateController.getWorkTemplateComponent
+);
+router.get(
+    '/template/create',
     isAuthenticated,
     hasRole('admin'),
     WorkTemplateController.getWorkTemplateEditorPageData
 );
+router.get(
+    '/template/edit/:id',
+    isAuthenticated,
+    hasRole('admin'),
+    WorkTemplateController.getWorkTemplateEditorPageData
+);
+router.post(
+    '/template/upsert',
+    isAuthenticated,
+    hasRole('admin'),
+    WorkTemplateController.saveWorkTemplate
+);
 router.delete(
-    '/work/template/delete/:id',
+    '/template/delete/:id',
     isAuthenticated,
     hasRole('admin'),
     WorkTemplateController.deleteWorkTemplate
+);
+
+router.get(
+    '/:id',
+    isAuthenticated,
+    WorkController.getWorkComponent
 );
 
 export default router;
