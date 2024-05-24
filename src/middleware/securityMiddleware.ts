@@ -4,8 +4,6 @@
  */
 import SecurityService from '../services/SecurityService';
 
-const security = SecurityService.getInstance();
-
-const IPSecurity = security.ipFilterMiddleware;
+const IPSecurity = SecurityService.ipFilterMiddleware;
 
 export { IPSecurity };

@@ -143,7 +143,7 @@ class StripeService {
                 customer: customer.id,
                 payment_method: paymentMethod.id, // Using the default payment method
                 confirm: true,
-                return_url: `${config.domain}/api/data/work/sub/pay/confirm?id=${newPaymentHistory._id}`
+                return_url: `${config.domain}/api/work/sub/pay/confirm?id=${newPaymentHistory._id}`
             });
             // Update the newPaymentHistory item in the subscription
             const paymentHistoryIndex = subscription.paymentHistory.findIndex((ph) => ph._id === newPaymentHistory._id);
@@ -229,7 +229,7 @@ class StripeService {
                 customer: customer.id,
                 payment_method: paymentMethod.id,
                 confirm: true,
-                return_url: `${config.domain}/api/data/work/pay/attached-card/confirm?id=${details.newPaymentHistory._id}`,
+                return_url: `${config.domain}/api/work/pay/attached-card/confirm?id=${details.newPaymentHistory._id}`,
                 description: `${details.name}`
             });
 

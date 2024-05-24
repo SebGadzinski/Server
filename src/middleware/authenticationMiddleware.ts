@@ -8,8 +8,6 @@ import config from '../config';
 import { Token } from '../models';
 import SecurityService from '../services/SecurityService';
 
-const security = SecurityService.getInstance();
-
 // Request is any because we want to assign the decoded user object to it.
 const isAuthenticated = (req: any, res: any, next: express.NextFunction) => {
   let token = '';
@@ -24,7 +22,7 @@ const isAuthenticated = (req: any, res: any, next: express.NextFunction) => {
   }
 
   const allowPassToSignUp = req.path.endsWith('/meeting/book')
-    || req.path.includes('/work/class/enroll/status');
+    || req.path.includes('/classes/enroll/status');
   const allowPassFromEmailUnConfirmed = req.path.endsWith('/emailConfirmStatus');
 
   let decoded: any = {};
@@ -86,7 +84,7 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
           req.user.data.roles.includes(minRole)));
 
     if (!passed) {
-      await security.checkAndBlockIP(req.ip);
+      await SecurityService.checkAndBlockIP(req.ip);
       return res.status(403).json({
         message: 'You are not allowed to access this resource.',
         success: false
@@ -100,7 +98,7 @@ const isUser = (options: { minRole?: string | null; needBoth?: boolean }) => {
 const hasRole = (role: string) => {
   return async (req, res, next) => {
     if (!req.user || !req.user.data.roles.includes(role)) {
-      await security.checkAndBlockIP(req.ip);
+      await SecurityService.checkAndBlockIP(req.ip);
       return res.status(403).json({
         message: 'You are not allowed to access this resource.',
         success: false
