@@ -6,26 +6,26 @@ import {
 
 const router = express.Router({});
 
+router.get('/', isAuthenticated, ClassController.getClassesPageData);
+
 router.post(
-    '/work/class/enroll/status/:id',
+    '/enroll/status/:id',
     isAuthenticated,
     ClassController.enrollmentStatus
 );
 router.post(
-    '/work/class/enroll/:id',
+    '/enroll/:id',
     isAuthenticated,
     ClassController.enroll
 );
+
+router.get('/join/:workId', isAuthenticated, ClassController.getJoinClassLink);
+router.post('/drop/:workId', isAuthenticated, ClassController.dropClass);
+
 router.post(
-    '/work/class/use/single-session/:id',
+    '/use/single-session/:id',
     isAuthenticated,
     ClassController.useSingleSession
 );
-
-router.get('/getClassesPageData', isAuthenticated, ClassController.getClassesPageData);
-
-router.get('/classes/join/:workId', isAuthenticated, ClassController.getJoinClassLink);
-
-router.post('/classes/drop/:workId', isAuthenticated, ClassController.dropClass);
 
 export default router;
