@@ -143,7 +143,7 @@ class StripeService {
                 customer: customer.id,
                 payment_method: paymentMethod.id, // Using the default payment method
                 confirm: true,
-                return_url: `${config.domain}/api/data/work/sub/pay/confirm?id=${newPaymentHistory._id}`
+                return_url: `${config.domain}/api/work/sub/pay/confirm?id=${newPaymentHistory._id}`
             });
             // Update the newPaymentHistory item in the subscription
             const paymentHistoryIndex = subscription.paymentHistory.findIndex((ph) => ph._id === newPaymentHistory._id);

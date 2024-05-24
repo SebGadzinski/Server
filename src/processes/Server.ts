@@ -14,7 +14,7 @@ import config from '../config';
 import { IPSecurity } from '../middleware/securityMiddleware';
 import {
   adminRoutes, appRoutes, authenticationRoutes,
-  browseRoutes, classRoutes, dataRoutes, meetingRoutes,
+  browseRoutes, classRoutes, homeRoutes, meetingRoutes,
   userRoutes, vmRoutes, workRoutes
 } from '../routes';
 import ipService from '../services/IPService';
@@ -108,7 +108,7 @@ class Server extends Process {
     this.app.use('/api/user', userRoutes);
     this.app.use('/api/auth', authenticationRoutes);
     this.app.use('/api/app', appRoutes);
-    this.app.use('/api/data', dataRoutes);
+    this.app.use('/api/home', homeRoutes);
     this.app.use('/api/browse', browseRoutes);
     this.app.use('/api/classes', classRoutes);
     this.app.use('/api/meeting', meetingRoutes);
