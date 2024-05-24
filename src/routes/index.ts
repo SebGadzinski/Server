@@ -2,6 +2,7 @@
  * @author Sebastian Gadzinski
  */
 
+export { default as adminRoutes } from './admin';
 export { default as appRoutes } from './app';
 export { default as authenticationRoutes } from './authentication';
 export { default as browseRoutes } from './browse';

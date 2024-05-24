@@ -13,7 +13,7 @@ import util from 'util';
 import config from '../config';
 import { IPSecurity } from '../middleware/securityMiddleware';
 import {
-  appRoutes, authenticationRoutes,
+  adminRoutes, appRoutes, authenticationRoutes,
   browseRoutes, classRoutes, dataRoutes, meetingRoutes,
   userRoutes, vmRoutes, workRoutes
 } from '../routes';
@@ -114,6 +114,7 @@ class Server extends Process {
     this.app.use('/api/meeting', meetingRoutes);
     this.app.use('/api/vm', vmRoutes);
     this.app.use('/api/work', workRoutes);
+    this.app.use('/api/admin', adminRoutes);
 
     if (httpsOptions) {
       // Create HTTPS server and start listening.
