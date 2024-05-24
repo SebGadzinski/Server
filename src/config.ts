@@ -36,7 +36,6 @@ const config = {
     process.env.TOKEN_EXPIRY_SECONDS,
     10
   ),
-
   refreshTokenExpiryDays: parseInt(
     process.env.REFRESH_TOKEN_EXPIRY_DAYS,
     10
