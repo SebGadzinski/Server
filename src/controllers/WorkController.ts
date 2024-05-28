@@ -326,10 +326,26 @@ class WorkController {
                     { $unwind: '$userDetails' },
                     {
                         $project: {
+                            categorySlug: 1,
+                            serviceSlug: 1,
                             email: '$userDetails.email'
                         }
                     }
-                ])).map((x) => x.email),
+                ])).reduce(async (acc, worker) => {
+                    const { categorySlug, serviceSlug, email } = worker;
+
+                    if (!acc[categorySlug]) {
+                        acc[categorySlug] = {};
+                    }
+
+                    if (!acc[categorySlug][serviceSlug]) {
+                        acc[categorySlug][serviceSlug] = [];
+                    }
+
+                    acc[categorySlug][serviceSlug].push(email);
+
+                    return acc;
+                }, {}),
                 workStatusOptions: _.values(c.WORK_STATUS_OPTIONS),
                 classTypeOptions: _.values(c.CLASS_TYPE),
                 paymentStatusOptions: _.values(c.PAYMENT_STATUS_OPTIONS),

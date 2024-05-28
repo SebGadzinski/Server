@@ -3,12 +3,6 @@
  * @author Sebastian Gadzinski
  */
 
-import mongoose from 'mongoose';
-import config from '../../src/config';
-import bluebird from 'bluebird';
-import { IUser } from '../../src/models/User';
-import UserService from '../../src/services/UserService';
-import userData from '../data/users';
 import BaseTest from './BaseTest';
 
 /**

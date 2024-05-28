@@ -11,6 +11,7 @@ import googleServiceAPI from './configs/google-services.json';
 import sendGrid from './configs/sendGrid.json';
 // import verifalia from './configs/verifalia.json';
 import zoom from './configs/zoom.json';
+import alignable from './configs/alignable.json';
 import mongoConstants from './constants/mongoConstants.json';
 import ipService from './services/IPService';
 
@@ -61,7 +62,8 @@ const config = {
   sslKeyPath: process.env.SSL_KEY_PATH,
   sslCertPath: process.env.SSL_CERT_PATH,
   appNotificationStatus: process.env.APP_NOTIFICATIONS_STATUS,
-  zoomMeetingEmail: 'sebastiangadzinskiwork@gmail.com'
+  zoomMeetingEmail: 'sebastiangadzinskiwork@gmail.com',
+  alignable
 };
 
 const internalIpV4 = ipService.getInternalIPv4();
