@@ -13,7 +13,7 @@ class HomeController {
   public async getHomePageData(req: any, res: any) {
     try {
       const data = await Category.find().select(
-        'name slug services.name services.slug services.thumbnailImg'
+        'name slug services.name services.slug services.thumbnailImg services.featured'
       );
 
       const workCards = [];
@@ -27,7 +27,8 @@ class HomeController {
               categorySlug: category.slug,
               service: service.name,
               serviceSlug: service.slug,
-              thumbnailImg: service.thumbnailImg
+              thumbnailImg: service.thumbnailImg,
+              featured: service.featured
             });
           } else {
             workCards.push({
@@ -35,7 +36,8 @@ class HomeController {
               categorySlug: category.slug,
               service: service.name,
               serviceSlug: service.slug,
-              thumbnailImg: service.thumbnailImg
+              thumbnailImg: service.thumbnailImg,
+              featured: service.featured
             });
           }
         }

@@ -5,13 +5,13 @@
 
 import _ from 'lodash';
 import os from 'os';
+import alignable from './configs/alignable.json';
 import chatGPT from './configs/chatGPT.json';
 import firebaseServiceAccount from './configs/firebase.json';
 import googleServiceAPI from './configs/google-services.json';
 import sendGrid from './configs/sendGrid.json';
 // import verifalia from './configs/verifalia.json';
 import zoom from './configs/zoom.json';
-import alignable from './configs/alignable.json';
 import mongoConstants from './constants/mongoConstants.json';
 import ipService from './services/IPService';
 

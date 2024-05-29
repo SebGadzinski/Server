@@ -593,7 +593,7 @@ class DatabaseSeeder extends Process {
           title: 'Experience',
           text: 'I have been designing for over 5 years!',
           badge: {
-            label: '8y',
+            label: '5y',
             color: 'accent'
           }
         },

@@ -24,6 +24,7 @@ export interface ICategory extends Document {
       faqs: [{ question: string; answer: string }];
       bookMeetingIntervals: IBookMeetingInterval[];
       meetingTimes?: Date[];
+      featured: boolean;
     }
   ];
   thumbnailImg: string;
@@ -71,6 +72,7 @@ const CategorySchema: Schema = new mongoose.Schema(
           faqs: [{ question: String, answer: String }],
           bookMeetingIntervals: { type: [bookMeetingIntervalsSchema], required: true },
           meetingTimes: { type: [Date], required: false },
+          featured: Boolean
         }
       ],
       required: true
