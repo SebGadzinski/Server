@@ -6,7 +6,6 @@
 import _ from 'lodash';
 import os from 'os';
 import alignable from './configs/alignable.json';
-import chatGPT from './configs/chatGPT.json';
 import firebaseServiceAccount from './configs/firebase.json';
 import googleServiceAPI from './configs/google-services.json';
 import sendGrid from './configs/sendGrid.json';
@@ -53,7 +52,6 @@ const config = {
   firebaseServiceAccount,
   downloadAppEndpoint: process.env.DOWNLOAD_APP_ENDPOINT,
   googleServiceAPI,
-  chatGPT,
   zoom,
   stripe,
   sendEmailStatus: process.env.SEND_EMAIL_STATUS,
@@ -73,14 +71,6 @@ function replaceLocalhost(obj) {
   return _.transform(obj, (result, value, key) => {
     if (_.isString(value)) {
       let newValue = value;
-
-      // Check for 'localhost:8080' before making any replacements
-      const localhostPort8080Regex = /localhost:8080/;
-      if (localhostPort8080Regex.test(value) &&
-        process.env.NODE_ENV === 'development' &&
-        runningCapacitator) {
-        newValue = newValue.replace(/:8080/, ':8080/#');
-      }
 
       // Replace 'http://' with 'https://' if useHTTPS is true
       if (useHTTPS) {

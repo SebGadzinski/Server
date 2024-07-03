@@ -62,7 +62,7 @@ class ToAlignable extends SelenuimTest {
                             details += `<p><strong>${detail.header}:</strong></p>`;
                             details += `<p>${detail.info}</p>`;
                         }
-                        let formatted = details + `<br/><a href="https://gadzy-work.com/#/${category.slug}/${service.slug}"><button>Go To Site!</button></a>`;
+                        let formatted = details + `<br/><a href="https://gadzy-work.com/${category.slug}/${service.slug}"><button>Go To Site!</button></a>`;
 
                         // Use JavaScript to set the inner HTML of the editor
                         await this.d.executeScript("arguments[0].innerHTML = arguments[1];", editorDiv, formatted);
