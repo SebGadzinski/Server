@@ -4,7 +4,6 @@
 
 export { default as AppService } from './AppService';
 export { default as AuthenticationService } from './AuthenticationService';
-export { default as ChatGPTService } from './ChatGPTService';
 export { default as ClassService } from './ClassService';
 export { default as EmailService } from './EmailService';
 export { default as FileService } from './FileService';
