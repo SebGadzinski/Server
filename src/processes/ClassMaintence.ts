@@ -73,6 +73,9 @@ class ClassMaintence extends CronProcess {
                             ]
                             ).exec();
 
+                            console.log(`${service.name} - Instructors: `);
+                            console.log(instructors);
+
                             const meeting = await ZoomMeetingService
                                 .createMeeting(instructors[0].email[0], {
                                     topic: `${service.name} Class`,
