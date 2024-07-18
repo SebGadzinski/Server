@@ -65,11 +65,6 @@ class UserController {
       // if not admin
       const userId = req?.params?.id;
 
-      // If userId is a thing and its not the user who is on check for admin
-      if (userId && !req?.user?.data.roles.includes('admin')) {
-        await SecurityService.accessDenied(req.ip);
-      }
-
       // If no userId then retrun the users own
       let user: any = {};
       const queryUserId = userId ?? req.user.data.id;

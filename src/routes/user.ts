@@ -14,7 +14,7 @@ const router = express.Router({});
 
 // Profile
 router.get('/profile', isAuthenticated, UserController.getProfile);
-router.get('/profile/:id', isAuthenticated, UserController.getProfile);
+router.get('/profile/:id', isAuthenticated, isUser({ minRole: 'admin' }), UserController.getProfile);
 
 router.post('/profile/save', isAuthenticated, UserController.saveProfile);
 
