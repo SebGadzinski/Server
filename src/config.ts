@@ -26,7 +26,7 @@ const stripe = {
 };
 
 const config = {
-  tempDir: os.platform().includes('win') ? 'C:/WorkTemp' : '/temp',
+  tempDir: process.env.TEMP_DIR,
   databaseUrl: process.env.MONGO_DB,
   port: parseInt(process.env.PORT, 10),
   saltRounds: parseInt(process.env.SALT_ROUNDS, 10),
