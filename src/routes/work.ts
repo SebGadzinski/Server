@@ -21,7 +21,7 @@ router.get(
 );
 router.post('/confirm/:id', isAuthenticated, WorkController.confirmWork);
 
-router.post(
+router.get(
     '/cancel/:id',
     isAuthenticated,
     WorkController.getWorkCancelPageData
