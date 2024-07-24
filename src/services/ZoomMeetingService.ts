@@ -28,11 +28,11 @@ class ZoomMeetingService {
     alternativeHosts?: string[],
     password?: boolean
   }): Promise<{ join_url?: string; meetingId?: string, password?: string }> {
-    return this.request(accountEmail, 'post', 'https://api.zoom.us/v2/users/me/meetings', meetingDetails);
+    return await this.request(accountEmail, 'post', 'https://api.zoom.us/v2/users/me/meetings', meetingDetails);
   }
 
   public async cancelMeeting(accountEmail: string, meetingId: string): Promise<boolean> {
-    return this.request(accountEmail, 'delete', `https://api.zoom.us/v2/meetings/${meetingId}`);
+    return await this.request(accountEmail, 'delete', `https://api.zoom.us/v2/meetings/${meetingId}`);
   }
 
   private async request(accountEmail: string, method: string, url: string, data?: any): Promise<any> {
@@ -57,8 +57,9 @@ class ZoomMeetingService {
       return method === 'post' ? this.formatMeetingResponse(response) : true;
     } catch (error) {
       if (error.response && error.response.status === 401) {
+        console.log(`${accountEmail} Token Expired - ${error}`);
         await this.authenticate(accountEmail);
-        return this.request(method, url, data);
+        return await this.request(method, url, data);
       }
       console.error(`Error handling Zoom request (${method}):`, error);
       return method === 'post' ? {} : false;
