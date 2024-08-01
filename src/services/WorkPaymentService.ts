@@ -4,10 +4,11 @@
  */
 
 import mongoose from 'mongoose';
-import config, { c } from '../config';
+import { c } from '../config';
 import { Category, User, Work, Worker } from '../models';
 import { IUser } from '../models/User';
 import { IPaymentHistory, IWork } from '../models/Work';
+import CSGeneratorService from './CSGeneratorService';
 import EmailService from './EmailService';
 import SubscriptionService from './SubscriptionService';
 
@@ -146,6 +147,10 @@ class WorkPaymentService {
         // Update the statuses of content of work
         if (paymentHistory.type === c.PAYMENT_HISTORY_TYPE.CONFIRMATION) {
             work.status = c.WORK_STATUS_OPTIONS.USER_ACCEPTED;
+
+            // CUSTOM PURCHASES
+            await CSGeneratorService.addTokens(work, user);
+
             work.initialPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
             if (work?.subscription?.length > 0) {
                 let sub = work?.subscription[work.subscription.length - 1];

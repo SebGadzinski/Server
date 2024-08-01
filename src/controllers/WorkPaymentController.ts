@@ -28,7 +28,7 @@ class WorkPaymentController {
                 return;
             }
 
-            const user = await User.findById(req.user.data.id);
+            const user = await User.findById(work.userId);
             const details = WorkPaymentService.getPaymentDetails(req.body, work);
             await StripeService.payViaAttachedCard(user, work, details);
 

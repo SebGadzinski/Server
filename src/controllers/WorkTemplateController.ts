@@ -6,7 +6,7 @@ import {
     WorkTemplate
 } from '../models';
 import {
-    MongoService,
+    MongoUtilService,
     SecurityService
 } from '../services';
 
@@ -18,7 +18,7 @@ class WorkTemplateController {
                 throw new Error('Name Required');
             }
 
-            const work = MongoService.stripMongo(req.body.work ?? req?.body?.template);
+            const work = MongoUtilService.stripMongo(req.body.work ?? req?.body?.template);
             function deleteId(obj) {
                 if (obj?._id) {
                     delete obj._id;

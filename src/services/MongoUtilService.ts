@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-class MongoService {
+class MongoUtilService {
     public static stripMongo(obj: any): any {
         return _.cloneDeepWith(obj, (value) => {
             if (_.isObject(value) && !_.isArray(value)) {
@@ -11,4 +11,4 @@ class MongoService {
     }
 }
 
-export default MongoService;
+export default MongoUtilService;

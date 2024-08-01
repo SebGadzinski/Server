@@ -13,6 +13,7 @@ import sendGrid from './configs/sendGrid.json';
 import zoom from './configs/zoom.json';
 import mongoConstants from './constants/mongoConstants.json';
 import ipService from './services/IPService';
+import MongoDBService from './services/MongoDBService';
 
 // Set to whats needed
 const useHTTPS = process.env.NODE_ENV === 'production' ? false : false;
@@ -28,6 +29,10 @@ const stripe = {
 const config = {
   tempDir: process.env.TEMP_DIR,
   databaseUrl: process.env.MONGO_DB,
+  csgenerator: {
+    databaseUrl: process.env.CSGENERATOR_MONGO_DB_URL,
+    databaseName: process.env.CSGENERATOR_MONGO_DB_DATABASE_NAME,
+  },
   port: parseInt(process.env.PORT, 10),
   saltRounds: parseInt(process.env.SALT_ROUNDS, 10),
   secret: process.env.SECRET,
@@ -92,6 +97,11 @@ function replaceLocalhost(obj) {
 const updatedConfig = replaceLocalhost(config);
 
 export default updatedConfig;
+
+export const csgeneratorMongo = new MongoDBService(
+  updatedConfig.csgenerator.databaseUrl
+  , updatedConfig.csgenerator.databaseName
+);
 
 export const c = {
   ...mongoConstants,

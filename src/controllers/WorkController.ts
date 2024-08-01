@@ -5,11 +5,13 @@
 
 import _ from 'lodash';
 import { Notification, Result } from '../classes';
-import config, { c } from '../config';
+import config, { c, csgeneratorMongo } from '../config';
 import {
-    Category, Classes, Config, Meetings, User, Work, Worker
+    Category, Classes, Config, Meetings, User, Work, Worker,
+    WorkTemplate
 } from '../models';
 import {
+    CSGeneratorService,
     EmailService,
     SecurityService,
     SubscriptionService,
@@ -225,6 +227,8 @@ class WorkController {
 
             work.initialPaymentStatus = c.PAYMENT_STATUS_OPTIONS.COMPLETED;
             work.save();
+
+            await CSGeneratorService.addTokens(work, workUser);
 
             const workers = await Worker.getWorkers(work.categorySlug, work.serviceSlug);
             await EmailService.sendConfirmWorkEmails(work, workUser, workers);
@@ -592,8 +596,57 @@ class WorkController {
         }
     }
 
-    // Payments
+    public async purchaseTemplate(req: any, res: any) {
+        try {
+            const template = await WorkTemplate.findById(req.params.id);
+            const slugs = await Category.getSlugs(template.category, template.service);
 
+            await Work.acceptingWork(slugs.categorySlug, slugs.serviceSlug);
+
+            // Create work and apply template
+            const newWork: any = new Work({
+                userId: req.user.data.id,
+                meetingId: null,
+                categorySlug: slugs.categorySlug,
+                serviceSlug: slugs.serviceSlug,
+                workItems: template.workItems,
+                paymentItems: template.paymentItems,
+                subscription: [],
+                initialPayment: template.initialPayment,
+                initialPaymentStatus: template.initialPaymentStatus,
+                cancellationPayment: template.cancellationPayment,
+                cancellationPaymentStatus: template.cancellationPaymentStatus,
+                status: c.WORK_STATUS_OPTIONS.CONFIRMATION_REQUIRED,
+                paymentHistory: [],
+                createdDate: new Date(),
+                createdBy: req.user.data.id,
+                updatedBy: req.user.data.id
+            });
+
+            if (template?.subscription?.payment > 0) {
+                newWork.subscription = [{
+                    payment: template.subscription.payment,
+                    interval: template.subscription.interval
+                }];
+                newWork.completeSubscription = true;
+            }
+
+            if (newWork.categorySlug === 'software' && newWork.serviceSlug === 'client-server-generator') {
+                if (!csgeneratorMongo?.db) throw new Error('CS Generating DB missing');
+
+                if (template.name === '1 Credit') newWork.tokens = 1;
+                else if (template.name === '10 Credits') newWork.tokens = 10;
+                else if (template.name === '100 Credits') newWork.tokens = 100;
+                else throw new Error('No Name Found');
+            }
+
+            await newWork.save();
+
+            res.send(new Result({ data: newWork._doc, success: true }));
+        } catch (err) {
+            res.send(new Result({ message: err.message, success: false }));
+        }
+    }
 }
 
 export default new WorkController();

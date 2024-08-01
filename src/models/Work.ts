@@ -80,6 +80,7 @@ export interface IWork extends Document {
   alertedForClassMeetingAt?: Date;
   completeSubscription?: boolean;
   classType?: string;
+  tokens?: number;
   createdBy: string;
   updatedBy: string;
 }
@@ -154,6 +155,7 @@ const WorkSchema: Schema = new mongoose.Schema(
     alertedForClassMeetingAt: { type: Date },
     completeSubscription: { type: Boolean },
     classType: { type: String },
+    tokens: { type: Number },
     createdBy: { type: String, required: true },
     updatedBy: { type: String, required: true }
   },

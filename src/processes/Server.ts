@@ -10,7 +10,7 @@ import fs from 'fs';
 import https from 'https';
 import util from 'util';
 
-import config from '../config';
+import config, { csgeneratorMongo } from '../config';
 import { IPSecurity } from '../middleware/securityMiddleware';
 import {
   adminRoutes, appRoutes, authenticationRoutes,
@@ -30,6 +30,9 @@ class Server extends Process {
 
   public async run() {
     await super.run();
+    console.log(`Connecting to CSGenerator DB`);
+    await csgeneratorMongo.connect();
+    console.log(`Connected to CSGenerator DB`);
     if (config.useHTTPS) {
       const options = await this.validateHttps();
       this.initilizeExpress(options);

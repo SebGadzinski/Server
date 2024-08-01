@@ -5,11 +5,12 @@
 export { default as AppService } from './AppService';
 export { default as AuthenticationService } from './AuthenticationService';
 export { default as ClassService } from './ClassService';
+export { default as CSGeneratorService } from './CSGeneratorService';
 export { default as EmailService } from './EmailService';
 export { default as FileService } from './FileService';
 export { default as IPService } from './IPService';
 export { default as NotificationService } from './NotificationService';
-export { default as MongoService } from './MongoService';
+export { default as MongoUtilService } from './MongoUtilService';
 export { default as SecurityService } from './SecurityService';
 export { default as StripeService } from './StripeService';
 export { default as SubscriptionService } from './SubscriptionService';

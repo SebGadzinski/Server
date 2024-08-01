@@ -106,4 +106,9 @@ router.get(
     WorkController.getWorkComponent
 );
 
+router.post(
+    '/purchase/:id',
+    isAuthenticated,
+    WorkController.purchaseTemplate
+);
 export default router;
