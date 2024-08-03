@@ -319,7 +319,6 @@ class ClassController {
 
     public async enroll(req: any, res: any) {
         try {
-
             const { template, status } = await ClassService.enrollmentStatus({
                 userId: req.user.data.id, templateId: req.params.id
             });

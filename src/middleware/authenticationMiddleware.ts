@@ -22,7 +22,7 @@ const isAuthenticated = (req: any, res: any, next: express.NextFunction) => {
   }
 
   const allowPassToSignUp = req.path.endsWith('/book')
-    || req.path.includes('/enroll/status');
+    || req.path.includes('/enroll/status') || req.path.includes('purchase/');
   const allowPassFromEmailUnConfirmed = req.path.endsWith('/emailConfirmStatus');
 
   let decoded: any = {};

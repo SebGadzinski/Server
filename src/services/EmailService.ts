@@ -310,17 +310,33 @@ class EmailService implements IEmailService {
         );
       }
     } else {
+      let header = `Successfully Purchased ${names.category} - ${names.service}`;
+      let body = `We will start working on this ASAP!`;
+      let link = `${config.frontEndDomain}/work/${work._id}`;
+      let btnMessage = 'View Work On Site';
+      if (work.categorySlug === 'software' && work.serviceSlug === 'client-server-generator') {
+        header = `Aquired ${work.tokens} Credits`;
+        body = `Head to CS Generator site to use your credits!`;
+        link = `cs-generator.gadzy-work.com/auth/login/?from-gadzy=${workUser.email}`;
+        btnMessage = 'Head To Site';
+      }
       await this.sendNotificationEmail(
         {
           to: workUser.email,
           title: `Purchased ${names.category} - ${names.service}`,
-          header: `Successfully Purchased ${names.category} - ${names.service}`,
-          body: `We will start working on this ASAP!`,
-          link: `${config.frontEndDomain}/work/${work._id}`,
-          btnMessage: 'View Work On Site',
+          header,
+          body,
+          link,
+          btnMessage,
           appNotification
         }
       );
+
+      // No need to make emails for this
+      if (work.categorySlug === 'software' && work.serviceSlug === 'client-server-generator') {
+        return;
+      }
+
       for (const worker of workers) {
         await this.sendNotificationEmail(
           {

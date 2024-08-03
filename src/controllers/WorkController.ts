@@ -598,6 +598,8 @@ class WorkController {
 
     public async purchaseTemplate(req: any, res: any) {
         try {
+            if (!req?.user?.data?.id) throw new Error('Sign Up Required');
+
             const template = await WorkTemplate.findById(req.params.id);
             const slugs = await Category.getSlugs(template.category, template.service);
 
