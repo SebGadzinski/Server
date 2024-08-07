@@ -317,7 +317,7 @@ class EmailService implements IEmailService {
       if (work.categorySlug === 'software' && work.serviceSlug === 'client-server-generator') {
         header = `Aquired ${work.tokens} Credits`;
         body = `Head to CS Generator site to use your credits!`;
-        link = `cs-generator.gadzy-work.com/auth/login/?from-gadzy=${workUser.email}`;
+        link = `https://cs-generator.gadzy-work.com/auth/login/?from-gadzy=${workUser.email}`;
         btnMessage = 'Head To Site';
       }
       await this.sendNotificationEmail(
