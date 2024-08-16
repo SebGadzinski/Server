@@ -106,7 +106,7 @@ class ClassController {
                             duration: 1,
                             serviceSlug: 1,
                             classType: c.CLASS_TYPE.PERPETUAL,
-                            canJoin: 1
+                            canJoin: '$comeIn',
                         }
                     }
                 ]);
@@ -210,6 +210,38 @@ class ClassController {
         }
     }
 
+    public async getZoomInfo(req: any, res: any) {
+        try {
+            const worker = await Worker.findOne({
+                userId: req.user.data.id,
+                serviceSlug: req?.params?.slug
+            });
+
+            if (!worker) throw new Error('Access Denied');
+
+            const myClass = await Classes.findOne({ serviceSlug: req?.params?.slug },
+                { comeIn: 1, meetingLink: 1, meetingPassword: 1 }).lean();
+
+            if (!myClass.comeIn) throw new Error('Cannot join class');
+            if (!myClass.meetingLink) throw new Error('Class getting ready!');
+
+            const meetingId = myClass.meetingLink.match(/\/j\/(\d+)\?/)[1];
+
+            res.send(new Result({
+                data: {
+                    comeIn: myClass.comeIn,
+                    meetingLink: myClass.meetingLink,
+                    meetingId,
+                    meetingPassword: myClass?.meetingPassword
+                }, success: true
+            }));
+        } catch (err) {
+            res
+                .status(500)
+                .send(new Result({ message: err.message, success: false }));
+        }
+    }
+
     public async getJoinClassLink(req: any, res: any) {
         try {
             if (!req?.params?.workId) throw new Error('Work ID is required');
@@ -245,7 +277,6 @@ class ClassController {
                 }, success: true
             }));
         } catch (err) {
-            console.error('Error in getWorkPageData:', err); // Improved error logging
             res
                 .status(500)
                 .send(new Result({ message: err.message, success: false }));

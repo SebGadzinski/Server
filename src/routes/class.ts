@@ -19,6 +19,7 @@ router.post(
     ClassController.enroll
 );
 
+router.get('/zoom-info/:slug', isAuthenticated, ClassController.getZoomInfo);
 router.get('/join/:workId', isAuthenticated, ClassController.getJoinClassLink);
 router.post('/drop/:workId', isAuthenticated, ClassController.dropClass);
 
