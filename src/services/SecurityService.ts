@@ -64,7 +64,7 @@ class SecurityService {
 
   public async isIPBlocked(ipAddress: string): Promise<boolean> {
     ipAddress = this.formatIPAddress(ipAddress); // Format IP address
-    const ipData = await IPData.findOne({ ipAddress });
+    const ipData = await IPData.findOne({ ipAddress }, { isBlocked: 1 }).lean();
     return ipData ? ipData.isBlocked : false;
   }
 
