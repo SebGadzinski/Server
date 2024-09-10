@@ -114,7 +114,7 @@ class Server extends Process {
     this.app.use('/api/home', homeRoutes);
     this.app.use('/api/browse', browseRoutes);
     this.app.use('/api/classes', classRoutes);
-    this.app.use('/api/meeting', meetingRoutes);
+    // this.app.use('/api/meeting', meetingRoutes);
     this.app.use('/api/vm', vmRoutes);
     this.app.use('/api/work', workRoutes);
     this.app.use('/api/admin', adminRoutes);
