@@ -125,7 +125,7 @@ class DatabaseSeeder extends Process {
   public async run() {
     await super.run();
     // await this.createAndInsertUNVDATESCategories();
-    await this.createConfigs();
+    // await this.createConfigs();
     await this.createAndInsertSampleCategories();
     await this.updateCategoryServicePictures();
     await this.createClasses();
