@@ -125,7 +125,7 @@ class DatabaseSeeder extends Process {
   public async run() {
     await super.run();
     // await this.createAndInsertUNVDATESCategories();
-    // await this.createConfigs();
+    await this.createConfigs();
     await this.createAndInsertSampleCategories();
     await this.updateCategoryServicePictures();
     await this.createClasses();
@@ -319,10 +319,10 @@ class DatabaseSeeder extends Process {
     const acceptingWork = {
       name: 'acceptingWork',
       value: {
-        classes: {
-          accepting: false,
-          noService: []
-        },
+        //   classes: {
+        //     accepting: false,
+        //     noService: []
+        //   },
         software: {
           accepting: false,
           noService: []
@@ -331,10 +331,10 @@ class DatabaseSeeder extends Process {
           accepting: false,
           noService: []
         },
-        videography: {
-          accepting: false,
-          noService: []
-        },
+        // videography: {
+        //   accepting: false,
+        //   noService: []
+        // },
         design: {
           accepting: false,
           noService: []
@@ -343,14 +343,12 @@ class DatabaseSeeder extends Process {
     };
 
     if (config.acceptingWork !== 'no') {
-      acceptingWork.value.classes.accepting = true;
+      // acceptingWork.value.classes.accepting = true;
       acceptingWork.value.software.accepting = true;
       acceptingWork.value.photography.accepting = true;
-      acceptingWork.value.videography.accepting = true;
+      // acceptingWork.value.videography.accepting = true;
       acceptingWork.value.design.accepting = true;
     }
-
-    // TODO: Make custom for prod
 
     await Config.insertMany([acceptingWork]);
   }
@@ -358,11 +356,12 @@ class DatabaseSeeder extends Process {
   private async createClasses() {
     await Classes.deleteMany({});
 
-    const classes = await Category.findOne({ slug: 'classes' }).select('services.slug').lean();
+    // const classes = await Category.findOne({ slug: 'classes' }).select('services.slug').lean();
 
-    await Classes.insertMany(classes.services.map((x) => {
-      return { serviceSlug: x.slug, ...this.classInfo[x.slug] };
-    }));
+    // await Classes.insertMany(classes.services.map((x) => {
+    //   return { serviceSlug: x.slug, ...this.classInfo[x.slug] };
+    // }));
+
     console.log('Class info was complete.');
   }
 
@@ -568,8 +567,8 @@ class DatabaseSeeder extends Process {
         },
       ],
       socials: {
-        instagram: 'https://www.instagram.com/daily.life.of.sebjo/',
-        youtube: 'https://www.youtube.com/channel/UCxjCGF7u1wTXjjDsKHe7NgA'
+        instagram: 'https://www.instagram.com/remote_develop/',
+        youtube: 'https://www.youtube.com/@jackedcode'
       }
     };
     const designWorker: any = {
@@ -599,8 +598,8 @@ class DatabaseSeeder extends Process {
         },
       ],
       socials: {
-        instagram: 'https://www.instagram.com/daily.life.of.sebjo/',
-        youtube: 'https://www.youtube.com/channel/UCxjCGF7u1wTXjjDsKHe7NgA'
+        instagram: 'https://www.instagram.com/remote_develop/',
+        youtube: 'https://www.youtube.com/@jackedcode'
       }
     };
     const photoWorker: any = {
@@ -667,7 +666,7 @@ class DatabaseSeeder extends Process {
     };
 
     const myWorkers = [];
-    for (const myWorker of [softwareWorker, designWorker, photoWorker, videoWorker]) {
+    for (const myWorker of [softwareWorker, designWorker, photoWorker]) {
       const categoryData = await Category.findOne(
         {
           slug: myWorker.categorySlug

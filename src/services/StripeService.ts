@@ -269,7 +269,7 @@ class StripeService {
                     product_data: {
                         name
                     },
-                    unit_amount: amount * 100
+                    unit_amount: Math.round(amount * 100)
                 },
                 quantity: 1
             }],
