@@ -7,6 +7,6 @@ import HomeController from '../controllers/HomeController';
 
 const router = express.Router({});
 
-router.get('/', HomeController.getHomePageData);
+router.get('/search', HomeController.getSearchPageData);
 
 export default router;

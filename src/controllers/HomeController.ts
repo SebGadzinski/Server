@@ -10,7 +10,7 @@ import {
 
 class HomeController {
 
-  public async getHomePageData(req: any, res: any) {
+  public async getSearchPageData(req: any, res: any) {
     try {
       const data = await Category.find().select(
         'name slug services.name services.slug services.thumbnailImg services.featured'
